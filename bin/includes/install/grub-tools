@@ -1,0 +1,39 @@
+#!/bin/bash
+
+del_grub_entry() {
+  mount_rw_conf_partition
+
+  get_valid_boots
+  current=$(get_running_version)
+
+  assocoptions=()
+  for v in ${allvers[@]}; do
+    if [ "$v" == "$current" ]; then
+      echo Skipping $v
+      continue
+    fi
+    utime=$(stat --format=%Y $WR_CONF/boot/$v/${v}.squashfs | cut -d. -f1)
+    assocoptions[$v]="$v from $utime"
+  done
+  if [ "${#assocoptions[@]}" -eq 0 ]; then
+
+    msgbox "Nothing to delete" "\nThere are no available images to delete.\n\nThis could be because you are trying to delete an image on a machine that is not installed, or there is only one image installed and you are running from it."
+    return
+  fi
+
+  get_assoc_menu "Delete?" "\nWhy would you want to delete something?\n\nThere are ${#assocoptions[@]} options here"
+  if [ ! "$choice" ]; then
+    return
+  fi
+
+  del_from_grub $choice
+  generate_grub_cfg "$WR_CONF/boot/grub/grub.cfg"
+  unmount_rw_conf_partition
+}
+
+force_reinstall_grub() {
+  mount_rw_conf_partition
+  infobox "Regenerating..." "\nRegenerating boot loader. Please wait.\n"
+  generate_grub_cfg "$WR_CONF/boot/grub/grub.cfg"
+  unmount_rw_conf_partition
+}

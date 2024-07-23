@@ -1,0 +1,131 @@
+#!/bin/bash
+
+siteconf_checks() {
+  mount_siteconf
+  gen_persistenceconf >${SCMOUNT}/persistence.conf
+  if ! root_is_persistent; then
+    siteconf_sshkeys
+    siteconf_wireguard
+  fi
+  unmount_siteconf
+  unmount_recovery_partition
+}
+
+root_is_persistent() {
+  [ -e ${SCMOUNT}/.persist_all ]
+}
+
+overlay_is_mounted() {
+  n=$1
+  grep -q "^overlay /etc/$n" /proc/mounts
+}
+
+get_overlay_dest() {
+  n=$1
+  if overlay_is_mounted $n; then
+    echo /etc/$n
+  else
+    echo ${SCMOUNT}/etc/$n/rw
+  fi
+}
+
+siteconf_sshkeys() {
+  ssh-keygen -A
+  d=$(get_overlay_dest ssh)
+  if [ "$d" != "/etc/ssh" ]; then
+    mkdir -p "$d"
+    cp -p /etc/ssh/ssh_host* "$d"
+  fi
+}
+
+siteconf_wireguard() {
+  d=$(get_overlay_dest wireguard)
+  if [ ! -e "$d/priv.key" ]; then
+    mkdir -p "$d"
+    wg genkey >$d/priv.key 2>/dev/null
+    wg pubkey <$d/priv.key >$d/public 2>/dev/null
+  fi
+}
+
+mount_siteconf() {
+  # Have we already been called?
+  if [ "$SCMOUNT" ]; then
+    return
+  fi
+
+  # If we know about the label, it should already be mounted.
+  scdev=$(find_siteconf_partition)
+  # If it's not mounted, stick it at /persist as a place for it to be
+  pmount=/persist
+  if [ ! "$scdev" ]; then
+    # It's not mounted. Create if needed, and mount it somewhere.
+    # By default it lives on the recovery volume.
+    mount_recovery_partition
+    scdev=${RCMOUNT}/siteconf
+    if [ ! -e $scdev ]; then
+      echo -n "** Creating recovery image:  "
+      progress_indicator start
+      truncate --size=1G $scdev
+      O=$(mkfs.ext4 -F $scdev -L siteconf 2>&1)
+      status=$?
+      progress_indicator stop
+      if [ "$status" -ne 0 ]; then
+        echo "mkfs error:"
+        echo $O
+        sleep 30
+        exit 1
+      fi
+      echo "Done."
+    fi
+    SCWASMOUNTED=yes
+    mkdir -p ${pmount}
+    mount ${scdev} ${pmount}
+  fi
+  # Now scdev is something like /dev/loop1 or /dev/sdb or whatever. Find where
+  # is is mounted (if it was new, it's at $pmount, otherwise it could be anywhere)
+  SCMOUNT=$(grep ^${scdev} /proc/mounts | head -1 | cut -d\  -f2)
+  if [ "$SCMOUNT" ]; then
+    # Found it!
+    return
+  fi
+
+  # We should never be here, as we shouldn't have known about the label if it wasn't
+  # mounted, but maybe we did.
+  mkdir -p ${pmount}
+  mount ${scdev} ${pmount}
+  SCWASMOUNTED=yes
+  SCMOUNT=${pmount}
+}
+
+unmount_siteconf() {
+  if [ "$SCWASMOUNTED" ]; then
+    umount ${SCMOUNT}
+    unset SCWASMOUNTED SCMOUNT
+  fi
+}
+
+gen_persistenceconf() {
+  if [ -e ${SCMOUNT}/.persist_all ]; then
+    echo "/ union"
+    return
+  fi
+  echo "/etc/ssh union"
+  echo "/etc/wireguard union"
+  echo "/etc/network union"
+  echo "/root union"
+  echo "/var/log union"
+}
+
+set_persistent_root() {
+  mount_siteconf
+  touch ${SCMOUNT}/.persist_all
+  gen_persistenceconf >${SCMOUNT}/persistence.conf
+  unmount_siteconf
+}
+
+del_persistent_root() {
+  mount_siteconf
+  rm -f ${SCMOUNT}/.persist_all
+  gen_persistenceconf >${SCMOUNT}/persistence.conf
+  unmount_siteconf
+}

@@ -1,0 +1,70 @@
+#!/bin/bash
+
+create_partitions() {
+  drive=$1
+  # Minimum of 16gb.
+  min=16000
+
+  # Make sure there is enough space on drive
+  size=$(get_drive_size "$drive")
+  if [ "$size" -lt "$min" ]; then
+    echo "Error: $drive is only ${size}MB. Minium is ${min}MB. Can not install."
+    exit 1
+  fi
+
+  if [ ! -e /sys/firmware/efi ]; then
+    echo "This is not an EFI machine. Can not continue."
+    exit 1
+  fi
+
+  d="/dev/${drive}"
+
+  # Figure out what the devices should be
+  if [[ "$drive" =~ (cciss|mmc|nvme) ]]; then
+    DEV="/dev/${drive}p"
+  else
+    DEV="/dev/$drive"
+  fi
+
+  EFI_PARTITION="${DEV}2"
+  RECOVERY_PARTITION="${DEV}3"
+  CONF_PARTITION="${DEV}4"
+  SPOOL_PARTITION="${DEV}5"
+
+  # part1 = BIOS BOOT (backwards compatibility)
+  # part2 = EFI (256M)
+  # part3 = RECOVERY (2GB)
+  # part4 = CONF (10GB)
+  # part5 = SPOOL (Whatever is left over)
+
+  # Legacy Boot, 2014 sector size is hard-coded in create_if_needed
+  create_if_needed "Legacy Boot" $d 1 legacy
+  create_if_needed "EFI Volume" $d 2 efi "+256M"
+  create_if_needed "Recovery" $d 3 recovery "+2G"
+  create_if_needed "Configuration" $d 4 conf "+10G"
+  create_if_needed "Spool" $d 5 $SPOOLLABEL "0"
+
+  partprobe $DEV
+  udevadm trigger
+  udevadm settle
+
+  # Double check it was created
+  if [ ! -b "$CONF_PARTITION" ]; then
+    echo "$CONF_PARTITION does not exist. This is a severe problem"
+    exit 1
+  fi
+
+  [ ! "$(blkid $EFI_PARTITION | grep TYPE=)" ] && make_efi_filesystem $EFI_PARTITION
+  [ ! "$(blkid $RECOVERY_PARTITION | grep TYPE=)" ] && make_recovery_filesystem $RECOVERY_PARTITION
+  [ ! "$(blkid $CONF_PARTITION | grep TYPE=)" ] && make_filesystem "$CONF_PARTITION" ext4 $CONFLABEL "Configuration"
+  # If spool is encrypted, don't touch it here
+  if [ ! "$ENCRYPTSPOOL" ]; then
+    [ ! "$(blkid $SPOOL_PARTITION | grep TYPE=)" ] && make_filesystem "$SPOOL_PARTITION" ext4 $SPOOLLABEL "Spool"
+  fi
+
+  # Make sure the partitions now exist
+  if [ ! "$(find_conf_partition)" ]; then
+    echo "Error finding conf partition"
+    exit 1
+  fi
+}

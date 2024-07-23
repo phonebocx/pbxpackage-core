@@ -1,0 +1,134 @@
+#!/bin/bash
+
+remove_partitions() {
+  drive=$1
+  spool=$(get_partition_label $drive 5)
+  if [ "$spool" ]; then
+    if [ "$spool" != "spool" ]; then
+      echo "FATAL ERROR:"
+      echo "  Drive $drive partition 5 has incorrect label $spool - Not deleting"
+      exit 1
+    fi
+    sgdisk $drive --delete=5
+  fi
+
+  conf=$(get_partition_label $drive 4)
+  if [ "$conf" ]; then
+    if [ "$conf" != "conf" ]; then
+      echo "FATAL ERROR:"
+      echo "  Drive $drive partition 4 has incorrect label $conf - Not deleting"
+      exit 1
+    fi
+    sgdisk $drive --delete=4
+  fi
+}
+
+make_filesystem() {
+  drive=$1
+  format=$2
+  label=$3
+  desc=$4
+
+  echo -n "   $drive - Creating $desc filesystem:  "
+  progress_indicator start
+  output=$(mkfs -L $label -t $format $drive 2>&1)
+  status=$?
+  if [ "$status" != 0 ]; then
+    echo -e "Error: couldn't create the $desc filesystem.\n$output\nExiting..."
+    exit 1
+  fi
+  progress_indicator stop
+  echo "OK"
+}
+
+make_efi_filesystem() {
+  drive=$1
+  echo -n "   $EFI_PARTITION - Creating UEFI filesystem: "
+  U=$(mkdosfs -F 32 -s 1 -n EFI $EFI_PARTITION 2>&1)
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    echo -e " Error creating EFI filesystem\n$U"
+    exit 1
+  fi
+  echo "OK"
+}
+
+make_recovery_filesystem() {
+  drive=$1
+  echo -n "   $RECOVERY_PARTITION - Recovery: "
+  U=$(mkdosfs -F 32 -s 1 -n recovery $RECOVERY_PARTITION 2>&1)
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    echo -e " Error creating Recovery\n$U"
+    exit 1
+  fi
+  echo "OK"
+}
+
+get_partition_label() {
+  drive=$1
+  part=$2
+  sgdisk -p $drive -i $part | awk '/Partition name:/ { print $3 }' | tr -d \'
+}
+
+get_partition_size() {
+  drive=$1
+  part=$2
+  sectors=$3
+  if [ "$sectors" ]; then
+    sgdisk -p $drive -i $part | awk '/Partition size:/ { print $3 }'
+  else
+    sgdisk -p $drive -i $part | awk '/Partition size:/ { print $5 }' | tr -d \(
+  fi
+}
+
+create_if_needed() {
+  descr=$1
+  drive=$2
+  part=$3
+  label=$4
+  size=$5
+
+  if [ "$label" == "legacy" ]; then
+    start=34
+    size=2047
+    type="EF02"
+  elif [ "$label" == "efi" ]; then
+    start=2048
+    type="EF00"
+  else
+    start=0
+    type="8300"
+  fi
+
+  # Does this partition already exist?
+  current=$(get_partition_label $drive $part)
+  if [ ! "$current" ]; then
+    # It doesn't, easy. Create it.
+
+    cmd="sgdisk -a1 -n${part}:${start}:${size} -t${part}:${type} -c${part}:${label} $drive 2>&1"
+    OUT=$($cmd)
+    status=$?
+    if [ "$status" -ne 0 ]; then
+      echo "FATAL ERROR:"
+      echo "  Error when running $cmd"
+      echo "  Output: $OUT"
+      exit 1
+    fi
+    echo "   Created $descr"
+  else
+    # It exists. Make sure it's sane
+    if [ "$current" != "$label" ]; then
+      echo "FATAL ERROR:"
+      echo "  Partition $part already exists with label $current, should be $label"
+      sleep 20
+      exit 1
+    fi
+  fi
+}
+
+does_partition_exist() {
+  drive=$1
+  partition=$2
+  sgdisk -i$2 /dev/$drive 2>&1 | grep -q "First sector"
+}

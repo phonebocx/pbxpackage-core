@@ -1,0 +1,245 @@
+#! /bin/bash
+
+do_install() {
+  echo "** Checking partitions on /dev/$DRIVE"
+  create_partitions $DRIVE
+  echo "** Partitions on /dev/$DRIVE OK"
+
+  if [ ! "$EFI_PARTITION" ]; then
+    EFI_PARTITION=$(get_efi_partition)
+  fi
+
+  if [[ -b "$SRC_ROOT" || (-f "$SRC_ROOT" && "$SRC_ROOT" == *".iso") ]]; then
+    # It could be a block device OR a file. We don't care
+    UNMOUNTISO=$SRC_ROOT
+    mount_iso
+    # This is unmounted in grub-functions::install_grub()
+  fi
+
+  NEWVERS=$(get_version $SRC_ROOT)
+  if [ "$NEWVERS" == "UNKNOWN" ]; then
+    echo "Can not find a version at $SRC_ROOT, please fix"
+    sleep 20
+    exit
+  fi
+
+  mount_rw_conf_partition
+  if [ "$FORCEDNAME" ]; then
+    echo "** Installing $FORCEDNAME ($NEWVERS) to $CONF_PARTITION at $WR_CONF"
+    iname=$FORCEDNAME
+    rootdir=$WR_CONF/boot/$FORCEDNAME
+  else
+    echo "** Installing $NEWVERS to $CONF_PARTITION at $WR_CONF"
+    iname=$NEWVERS
+    rootdir=$WR_CONF/boot/$NEWVERS
+  fi
+  run_pre_copy_hooks
+  copy_image
+}
+
+copy_image() {
+  if [ -e "$rootdir" ]; then
+    if [ "$OVERWRITE" ]; then
+      rm -rf "$rootdir"
+      mkdir -p "$rootdir"
+    else
+      echo "** FATAL ERROR! **"
+      echo "   $rootdir exists. Please delete this build before trying again"
+      FATAL="overwrite"
+      sleep 10
+      return
+    fi
+  else
+    mkdir -p "$rootdir"
+  fi
+
+  echo -n "   Copying source image:  "
+  progress_indicator start
+
+  src_img=${SRC_ROOT}/live/filesystem.squashfs
+  dst_img=${rootdir}/${iname}.squashfs
+
+  if [ ! -e "$src_img" ]; then
+    progress_indicator stop
+    echo -n "\nERROR - $src_img does not exist."
+    sleep 5
+    exit 1
+  fi
+
+  if [ ! -e ${rootdir}/vmlinuz ]; then
+    cp -dp ${SRC_ROOT}/live/vmlinuz ${rootdir}
+  fi
+  if [ ! -e ${rootdir}/initrd.img ]; then
+    cp -dp ${SRC_ROOT}/live/initrd.img ${rootdir}
+  fi
+  if [ ! -e ${dst_img} ]; then
+    cp ${src_img} ${dst_img}
+  fi
+  touch ${dst_img}
+
+  # Grab this image's grub and distro folder
+  grub_img=${rootdir}/${iname}.grub.tgz
+  tar -C ${SRC_ROOT}/boot/ -zcf $grub_img grub
+  rsync -a ${SRC_ROOT}/distro ${rootdir}
+
+  if [ -e ${SRC_ROOT}/boot/grub/splash.png ]; then
+    cp ${SRC_ROOT}/boot/grub/splash.png ${rootdir}
+    # Update the default grub splash too. This should always exist,
+    # but maybe we're testing... ?
+    if [ -d ${WR_CONF}/boot/grub/ ]; then
+      cp -f ${SRC_ROOT}/boot/grub/splash.png ${WR_CONF}/boot/grub/
+    fi
+  fi
+  rsync -a ${SRC_ROOT}/live/packages ${rootdir}
+
+  # Keep the original packages for factory reset
+  rm -rf ${rootdir}/factory
+  mkdir ${rootdir}/factory
+  for x in ${rootdir}/packages/*; do
+    if [ ! -e $x ]; then
+      continue
+    fi
+    ln $x ${rootdir}/factory/$(basename $x)
+  done
+
+  touch ${rootdir}/distro.timestamp
+
+  if [ -e ${SRC_ROOT}/live/memtest ]; then
+    rm -f ${WR_CONF}/boot/memtest
+    cp ${SRC_ROOT}/live/memtest ${WR_CONF}/boot/memtest
+  fi
+  progress_indicator stop
+
+  echo -e "\bOK"
+
+  run_post_copy_hooks
+}
+
+run_hook() {
+  hooktype=$1
+  hookdesc="$2"
+  if ! grep -q $SRC_ROOT /proc/mounts; then
+    echo "FATAL ERROR:"
+    echo "  $SRC_ROOT is not mounted, can't check for hooks"
+    exit 1
+  fi
+  if [ -d $SRC_ROOT/isohooks -a -e "$SRC_ROOT/isohooks/$1" ]; then
+    $SRC_ROOT/isohooks/$1
+    status=$?
+    if [ "$status" -ne 0 ]; then
+      echo "FATAL ERROR:"
+      echo "  $2 failed when running $SRC_ROOT/isohooks/$1"
+    fi
+  fi
+}
+
+run_pre_copy_hooks() {
+  run_hook pre_copy "Pre-Copy hooks"
+}
+
+run_post_copy_hooks() {
+  run_hook post_copy "Post-Copy hooks"
+}
+
+mount_rw() {
+  echo "dont call me baby"
+  sleep 99
+  exit
+  srcpart=$1
+  dest=$2
+  [ ! -d "$dest" ] && mkdir -p "$dest"
+  if ! grep -q -e "^$srcpart $dest " /proc/mounts; then
+    mount $srcpart $dest
+    dismount="true"
+  fi
+  # Not sure how SOMETHING mounted this read only, but fix it.
+  if egrep -q "^$srcpart $dest .+ro," /proc/mounts; then
+    mount -o remount,rw $dest
+    remountro="true"
+  fi
+}
+
+is_live_cd_boot() {
+  # On an installed system the image file is named after the current version,
+  # but when booted from livecd it's just "filesystem.squashfs"
+  if grep -q -e '^overlay.*/filesystem.squashfs' /proc/mounts; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+get_version() {
+  vpath=$1/distro/distrovars.json
+  if [ ! -e $vpath ]; then
+    echo "UNKNOWN"
+  else
+    jq -r '.buildver' <$vpath
+  fi
+}
+
+mount_squashfs() {
+  src=$1
+  if [ ! "$src" ]; then
+    echo "Bug: No source provided to mount"
+    exit 1
+  fi
+
+  if [ ! -e "$src" ]; then
+    echo "FATAL ERROR:"
+    echo "  Can't find source $src to mount"
+    exit 1
+  fi
+  mkdir -p "$SQUASH_ROOT"
+  if grep -q "$SQUASH_ROOT" /proc/mounts; then
+    if ! umount $SQUASH_ROOT; then
+      echo "FATAL ERROR:"
+      echo "  Unable to unmount $SQUASH_ROOT"
+      exit 1
+    fi
+  fi
+  mount -t squashfs $src $SQUASH_ROOT
+}
+
+clean_up() {
+  echo In cleanup
+  grep -q /tmp/iso_mount /proc/mounts && umount /tmp/iso_mount
+  grep -q $SQUASH_ROOT /proc/mounts && umount $SQUASH_ROOT
+  grep -q $WR_CONF /proc/mounts && umount $WR_CONF
+  grep -q $EFI_ROOT /proc/mounts && umount $EFI_ROOT
+}
+
+sig_handler() {
+  echo "ERROR: Signal received. Exiting..."
+  clean_up
+  echo "Done by sig_handler"
+  trap - EXIT
+  exit 1
+}
+
+exit_handler() {
+  clean_up
+}
+
+# We return the exit code of the test
+is_phonebocx_installed() {
+  CONF_PARTITION=$(find_conf_partition)
+  [ "$CONF_PARTITION" ]
+}
+
+cleanup_old_installs() {
+  if [ -d /spool ]; then
+    find /spool -maxdepth 1 -name *.iso -mtime +14 -exec rm -rf {} \;
+  fi
+
+  if [ ! -d "$WR_CONF/boot" ]; then
+    echo "Can't cleanup old installs, $WR_CONF/boot is not a directory"
+    sleep 10
+    return
+  fi
+  # Find all phonebocx installs, and remove all but the latest 5.
+  DIRS=$(find $WR_CONF/boot -name distro.timestamp -printf "%T@ %h\n" | sort | head -n-5 | cut -d\  -f2)
+  if [ "$DIRS" ]; then
+    rm -rf $DIRS
+  fi
+}

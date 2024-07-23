@@ -1,0 +1,11 @@
+[Unit]
+Description=Workaround to set sysinfo readable
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/bin/bash -c "/bin/chmod a+r /sys/class/dmi/id/*"
+
+[Install]
+WantedBy=multi-user.target
+

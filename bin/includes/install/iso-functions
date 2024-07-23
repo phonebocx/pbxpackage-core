@@ -1,0 +1,17 @@
+#!/bin/bash
+
+mount_iso() {
+  if grep -q " $ISO_MOUNT " /proc/mounts; then
+    echo "$ISO_MOUNT is already in use. Can't continue"
+    exit 1
+  fi
+
+  mkdir -p $ISO_MOUNT
+  mount -o ro $SRC_ROOT $ISO_MOUNT
+  if [ ! -e $ISO_MOUNT/distro/distrovars.json ]; then
+    echo "$SRC_ROOT is not a known ISO, aborting"
+    umount $ISO_MOUNT
+    exit
+  fi
+  SRC_ROOT=$ISO_MOUNT
+}

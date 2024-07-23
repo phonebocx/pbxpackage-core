@@ -1,0 +1,115 @@
+#!/bin/bash
+
+find_conf_partition() {
+
+  if [ ! -e /dev/disk/by-label/$CONFLABEL ]; then
+    return
+  fi
+  readlink -f /dev/disk/by-label/$CONFLABEL
+}
+
+find_spool_partition() {
+  if [ ! -e /dev/disk/by-label/$SPOOLLABEL ]; then
+    return
+  fi
+  readlink -f /dev/disk/by-label/$SPOOLLABEL
+}
+
+find_efi_partition() {
+  if [ ! -e /dev/disk/by-label/EFI ]; then
+    return
+  fi
+  readlink -f /dev/disk/by-label/EFI
+}
+
+find_recovery_partition() {
+  if [ ! -e /dev/disk/by-label/recovery ]; then
+    return
+  fi
+  readlink -f /dev/disk/by-label/recovery
+}
+
+find_siteconf_partition() {
+  if [ ! -e /dev/disk/by-label/siteconf ]; then
+    return
+  fi
+  readlink -f /dev/disk/by-label/siteconf
+}
+
+get_drive_size() {
+  local ldrive=$1
+
+  # Get size of disk in 1k blocks
+  local blocks=$(sfdisk -s /dev/$ldrive)
+
+  # Translate to Megabytes (SI units)
+  local bytes=$(($blocks * 1024))
+  local lsize=$(($bytes / 1000000))
+
+  echo $lsize
+}
+
+find_usable_storage() {
+  local drive
+  DEVICES=()
+  POTENTIAL=$(ls /sys/block | grep -E '^(nvme.|[hsv]d.|mmcblk.)$')
+  for drive in $POTENTIAL; do
+    if [ $(cat /sys/block/$drive/size) -eq 0 ]; then
+      continue
+    fi
+    if [ $(cat /sys/block/$drive/ro) -eq 0 ]; then
+      if grep -q /dev/$drive /proc/mounts; then
+        continue
+      else
+        DEVICES+=($drive)
+      fi
+    fi
+  done
+}
+
+get_running_version() {
+  local img=$(awk '{ print $1 }' /proc/cmdline | cut -d= -f2)
+  if [ "${img:0:5}" == "/boot" ]; then
+    echo $img | cut -d/ -f3
+  else
+    echo live
+  fi
+}
+
+# This is only used by grub-list. It probably should be replaced by the
+# faster php util at some point.
+get_period_text() {
+  seconds=$1
+  months=0
+  weeks=0
+  days=0
+  hours=0
+  mins=0
+
+  setcount months 2592000
+  setcount weeks $((60 * 60 * 24 * 7))
+  setcount days $((60 * 60 * 24))
+  setcount hours $((60 * 60))
+  setcount mins 60
+  ret=$(plural $months Month)$(plural $weeks Week)$(plural $days Day)$(plural $hours Hour)$(plural $mins Min)$(plural $seconds second)
+
+  echo $ret | sed -r -e 's/,$//' -e 's/^(.+),([^,]+)$/\1 and \2/' -e 's/  / /g'
+}
+
+plural() {
+  num=$1
+  str=$2
+  [ $num -gt 1 ] && echo "$num ${str}s, "
+  [ $num -eq 1 ] && echo "$num ${str}, "
+}
+
+setcount() {
+  c=0
+  vname=$1
+  mod=$2
+  while [ $(($seconds - $mod)) -gt -1 ]; do
+    c=$(($c + 1))
+    seconds=$(($seconds - $mod))
+  done
+  $vname=$c
+}

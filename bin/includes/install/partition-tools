@@ -1,0 +1,89 @@
+#!/bin/bash
+
+mount_recovery_partition() {
+  RECOVERY_PARTITION=$(find_recovery_partition)
+  if [ ! "${RECOVERY_PARTITION}" ]; then
+    echo "FATAL ERROR:"
+    echo "  Unable to find Recovery partition"
+    exit 1
+  fi
+  RCMOUNT=$(grep ${RECOVERY_PARTITION} /proc/mounts | head -1 | cut -d\  -f2)
+  if [ "$RCMOUNT" ]; then
+    # Already mounted
+    return
+  fi
+  RCWASMOUNTED=yes
+  RCMOUNT=/recovery
+  mkdir -p ${RCMOUNT}
+  mount "${RECOVERY_PARTITION}" ${RCMOUNT}
+}
+
+unmount_recovery_partition() {
+  if [ ! "$RCWASMOUNTED" ]; then
+    # If we didn't mount it, don't unmount it
+    return
+  fi
+
+  RECOVERY_PARTITION=$(find_recovery_partition)
+  if [ ! "${RECOVERY_PARTITION}" ]; then
+    echo "FATAL ERROR:"
+    echo "  Unable to find Recovery partition"
+    return
+  fi
+  if grep -q "^${RECOVERY_PARTITION} ${RCMOUNT}" /proc/mounts; then
+    # It's mounted, unmount it
+    umount ${RCMOUNT}
+    unset RCWASMOUNTED RCMOUNT
+  fi
+}
+
+mount_rw_conf_partition() {
+  CONF_PARTITION=$(find_conf_partition)
+  if [ ! "${CONF_PARTITION}" ]; then
+    echo "FATAL ERROR:"
+    echo "  Unable to find config partition"
+    exit 1
+  fi
+  CONFMOUNT=$(grep "^${CONF_PARTITION} ${WR_CONF}" /proc/mounts | head -1 | cut -d\  -f2)
+  if [ "$CONFMOUNT" ]; then
+    # Already mounted
+    return
+  fi
+  CONFWASMOUNTED=${WR_CONF}
+  mount -o remount,rw ${CONF_PARTITION}
+  mkdir -p ${WR_CONF}
+  mount -o rw "${CONF_PARTITION}" ${WR_CONF}
+}
+
+unmount_rw_conf_partition() {
+  if [ "$CONFWASMOUNTED" ]; then
+    mount -o remount,ro ${CONFWASMOUNTED}
+    umount ${CONFWASMOUNTED}
+    unset CONFWASMOUNTED
+  fi
+}
+
+# This should always be RW, if it's not something messed up
+mount_efi_partition() {
+  EFI_PARTITION=$(find_efi_partition)
+  if [ ! "${EFI_PARTITION}" ]; then
+    echo "FATAL ERROR:"
+    echo "  Unable to find EFI partition"
+    exit 1
+  fi
+  mkdir -p $EFI_CONF
+  EFIMOUNT=$(grep "^${EFI_PARTITION} ${EFI_CONF}" /proc/mounts | head -1 | cut -d\  -f2)
+  if [ "$EFIMOUNT" ]; then
+    # Already mounted
+    return
+  fi
+  EFIWASMOUNTED=${EFI_CONF}
+  mount $EFI_PARTITION $EFI_CONF
+}
+
+unmount_efi_partition() {
+  if [ "$EFIWASMOUNTED" ]; then
+    umount ${EFIWASMOUNTED}
+    unset EFIWASMOUNTED
+  fi
+}

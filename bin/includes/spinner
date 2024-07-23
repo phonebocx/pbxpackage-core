@@ -1,0 +1,34 @@
+#!/bin/bash
+id=$1
+
+if [ ! "$id" ]; then
+  echo "Error no ID given to progress??"
+  exit 1
+fi
+
+delay=${2:-10}
+
+frames=( '-' '/' '|' '\\' )
+f=/tmp/pi.$id
+echo "running" > $f
+
+while [ -e "$f" ]; do
+  for i in "${frames[@]}"; do
+    if [ -s "$f" ]; then
+      echo -ne "\b$i"
+    else
+      rm -f "$f"
+      echo -ne "\b "
+      break
+    fi
+    lcount=$delay
+    while [ "$lcount" -gt 0 ]; do
+      lcount=$(( $lcount - 1 ))
+      if [ -s "$f" ]; then
+        sleep .1
+      else
+        break
+      fi
+    done
+  done
+done

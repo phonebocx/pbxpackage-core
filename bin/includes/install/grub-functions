@@ -1,0 +1,130 @@
+#!/bin/bash
+
+declare -a allvers
+
+install_grub() {
+  mount_efi_partition
+  GRUBNAME=$(get_grub_name)
+  cmd="grub-install --no-floppy --recheck --target=x86_64-efi --force-extra-removable --root-directory=${WR_CONF} --efi-directory=${EFI_CONF} --bootloader-id=${GRUBNAME} --no-uefi-secure-boot"
+  echo -n "Installing Grub to $EFI_PARTITION:  "
+  progress_indicator start
+  OUT=$($cmd 2>&1)
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    progress_indicator stop
+    echo -n "\n** Failure Running grub-install **"
+    echo "  Ran: $cmd"
+    echo "  Result: $OUT"
+    exit 1
+  fi
+  update_grub_files
+  generate_grub_cfg "$WR_CONF/boot/grub/grub.cfg"
+  progress_indicator stop
+  echo " Done"
+  unmount_efi_partition
+  if [ "$UNMOUNTISO" ]; then
+    umount $ISO_MOUNT
+  fi
+  # Whatever's calling this should update siteconf after this
+}
+
+update_grub_files() {
+  rsync -a ${SRC_ROOT}/boot/grub/*cfg ${WR_CONF}/boot/grub
+  #rsync -a ${SRC_ROOT}/boot/grub/*txt ${WR_CONF}/boot/grub
+  #rsync -a ${SRC_ROOT}/boot/grub/*png ${WR_CONF}/boot/grub
+  rsync -a ${SRC_ROOT}/boot/grub/*pf2 ${WR_CONF}/boot/grub
+
+  # theme.txt may or may not have a path to /isolinux in the image
+  sed -i 's_/isolinux/__' ${WR_CONF}/boot/grub/theme.txt
+
+  # If there's an isolinux/splash.png, use that.
+  if [ -e ${SRC_ROOT}/isolinux/splash.png ]; then
+    rm -f ${WR_CONF}/boot/grub/splash.png
+    cp ${SRC_ROOT}/isolinux/splash.png ${WR_CONF}/boot/grub/splash.png
+  fi
+}
+
+get_valid_boots() {
+  DEFAULT=""
+  allvers=()
+  for v in $(find ${WR_CONF}/boot -maxdepth 2 -name '*.squashfs' -printf "%T@ %p\n" | sort -nr | cut -d\  -f2); do
+    dir=$(dirname $v)
+    thisvers=$(basename $dir)
+    if [ -e $dir/default-override -a "$DEFAULT" == "" ]; then
+      DEFAULT=${#allvers[@]}
+    fi
+    allvers+=($thisvers)
+  done
+}
+
+get_grub_name() {
+  if [ -e /distro/grubname ]; then
+    cat /distro/grubname
+  else
+    if [ ! -e /distro/shortname ]; then
+      echo PhoneBocxErr
+    else
+      cat /distro/shortname
+    fi
+  fi
+}
+
+generate_grub_cfg() {
+  OUTFILE="$1"
+  echo Generating $OUTFILE
+  DEBUG_OPTIONS="$GRUB_OPTIONS debug systemd.log_level=info"
+  GRUBNAME=$(get_grub_name)
+  get_valid_boots
+  if [ "$DEFAULT" == "" ]; then
+    DEFAULT=0
+  fi
+
+  sed -e "s/__DEFAULT__/$DEFAULT/" -e "s/__TIMEOUT__/$TIMEOUT/" $INCDIR/grub-header.inc >$OUTFILE
+
+  madefr=""
+
+  for v in "${allvers[@]}"; do
+    echo "menuentry \"$GRUBNAME $v\" {" >>$OUTFILE
+    echo "  linux /boot/$v/vmlinuz $(printf "$GRUB_OPTIONS" $v) nomodeset quiet" >>$OUTFILE
+    echo "  initrd /boot/$v/initrd.img" >>$OUTFILE
+    echo "}" >>$OUTFILE
+    echo "menuentry \"$GRUBNAME $v (Debug)\" {" >>$OUTFILE
+    echo "  linux /boot/$v/vmlinuz $(printf "$DEBUG_OPTIONS" $v) nomodeset debug systemd.log_level=info" >>$OUTFILE
+    echo "  initrd /boot/$v/initrd.img" >>$OUTFILE
+    echo "}" >>$OUTFILE
+    if [ ! "$madefr" ]; then
+      echo "menuentry \"Factory Reset\" {" >>$OUTFILE
+      echo "  linux /boot/$v/vmlinuz $(printf "$GRUB_OPTIONS" $v) nomodeset nopersistence init=$reset_script" >>$OUTFILE
+      echo "  initrd /boot/$v/initrd.img" >>$OUTFILE
+      echo "}" >>$OUTFILE
+      madefr="yes"
+    fi
+  done
+
+  if [ -e ${WR_CONF}/boot/memtest ]; then
+    echo "menuentry \"Memtest\" {" >>$OUTFILE
+    echo "  linux16 /boot/memtest" >>$OUTFILE
+    echo "}" >>$OUTFILE
+  fi
+}
+
+del_from_grub() {
+  build=$1
+  # Make sure there's more than 1 build left
+  get_valid_boots
+  if [ "${#allvers[@]}" -le 1 ]; then
+    echo "Only ${#allvers[@]} valid boot entries. Can not delete"
+    exit
+  fi
+  bdir=${WR_CONF}/boot/${build}
+  if [ ! -d "$bdir" ]; then
+    echo "$bdir is not a dir? How can I delete that?"
+    exit
+  fi
+  if [ ! -e "$bdir/$build.squashfs" ]; then
+    echo "$bdir/$build.squashfs doesn't exist. Can not delete this"
+    exit
+  fi
+
+  rm -rf $bdir
+}
