@@ -77,18 +77,14 @@ copy_image() {
   fi
   touch ${dst_img}
 
-  # Grab this image's grub and distro folder
-  grub_img=${rootdir}/${iname}.grub.tgz
-  tar -C ${SRC_ROOT}/boot/ -zcf $grub_img grub
+  # Grab this image's distro folder
   rsync -a ${SRC_ROOT}/distro ${rootdir}
 
-  if [ -e ${SRC_ROOT}/boot/grub/splash.png ]; then
-    cp ${SRC_ROOT}/boot/grub/splash.png ${rootdir}
-    # Update the default grub splash too. This should always exist,
-    # but maybe we're testing... ?
-    if [ -d ${WR_CONF}/boot/grub/ ]; then
-      cp -f ${SRC_ROOT}/boot/grub/splash.png ${WR_CONF}/boot/grub/
-    fi
+  # If there is a distro png, copy ALL pngs from distro into /boot/grub,
+  # clobbering anything  that was already there
+  if [ -e ${SRC_ROOT}/distro/splash.png ]; then
+    mkdir -p ${WR_CONF}/boot/grub/
+    cp ${SRC_ROOT}/distro/*.png ${WR_CONF}/boot/grub/
   fi
   rsync -a ${SRC_ROOT}/live/packages ${rootdir}
 

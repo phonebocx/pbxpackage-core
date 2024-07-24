@@ -112,7 +112,7 @@ update_from_folder() {
   do_install
   # This should always exist, but maybe it was deleted or something?
   if [ -e "$WR_CONF/boot/grub/grub.cfg" ]; then
-    generate_grub_cfg "$WR_CONF/boot/grub/grub.cfg"
+    generate_grub_cfg "$WR_CONF/boot/grub"
   else
     install_grub
   fi

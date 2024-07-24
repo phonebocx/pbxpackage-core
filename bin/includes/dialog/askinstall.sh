@@ -55,10 +55,7 @@ dialog_install() {
   do_install
   install_grub
   siteconf_checks
-  if [ "$dismount" != "no" ]; then
-    echo Unmounting $WR_CONF
-    umount $WR_CONF
-  fi
+  unmount_rw_conf_partition
   if grep -q 'wipeall' /proc/cmdline; then
     echo Not rebooting from wipeall
     sleep 5

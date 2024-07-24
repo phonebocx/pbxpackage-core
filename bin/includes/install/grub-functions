@@ -18,7 +18,7 @@ install_grub() {
     exit 1
   fi
   update_grub_files
-  generate_grub_cfg "$WR_CONF/boot/grub/grub.cfg"
+  generate_grub_cfg "$WR_CONF/boot/grub"
   progress_indicator stop
   echo " Done"
   unmount_efi_partition
@@ -29,6 +29,7 @@ install_grub() {
 }
 
 update_grub_files() {
+  return
   rsync -a ${SRC_ROOT}/boot/grub/*cfg ${WR_CONF}/boot/grub
   #rsync -a ${SRC_ROOT}/boot/grub/*txt ${WR_CONF}/boot/grub
   #rsync -a ${SRC_ROOT}/boot/grub/*png ${WR_CONF}/boot/grub
@@ -69,8 +70,26 @@ get_grub_name() {
   fi
 }
 
+install_grub_theme() {
+  DESTDIR="$1/theme"
+  mkdir -p $DESTDIR
+  # If there is a THEMEDIR set by something, use that too, but AFTER
+  # core, so it can clobber anything it wants
+  tdirs=${packagespresent["core"]}
+  if [ "$THEMEDIR" ]; then
+    tdirs="$tdirs $THEMEDIR"
+  fi
+  for d in $tdirs; do
+    for gfile in $d/meta/grub/*; do
+      [ ! -e $gfile ] && continue
+      cp $gfile $DESTDIR/$(basename $gfile)
+    done
+  done
+}
+
 generate_grub_cfg() {
-  OUTFILE="$1"
+  install_grub_theme $1
+  OUTFILE="$1/grub.cfg"
   echo Generating $OUTFILE
   DEBUG_OPTIONS="$GRUB_OPTIONS debug systemd.log_level=info"
   GRUBNAME=$(get_grub_name)

@@ -50,7 +50,8 @@ mount_rw_conf_partition() {
     return
   fi
   CONFWASMOUNTED=${WR_CONF}
-  mount -o remount,rw ${CONF_PARTITION}
+  # Ignore errors, it may not be mounted at all yet (eg, installing)
+  mount -o remount,rw ${CONF_PARTITION} 2>/dev/null
   mkdir -p ${WR_CONF}
   mount -o rw "${CONF_PARTITION}" ${WR_CONF}
 }

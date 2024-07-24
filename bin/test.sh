@@ -5,7 +5,7 @@ DIR="$(dirname "$(readlink -f "$0")")"
 
 include_component install.inc
 
-install_os
+install_grub_theme /woop
 exit
 
 mount_siteconf

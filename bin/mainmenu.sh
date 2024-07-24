@@ -74,6 +74,7 @@ while :; do
   if [ "${assocfunctions[${choice}]}" ]; then
     callfunc=${assocfunctions[${choice}]}
     $callfunc
+    echo "$callfunc finished"
     sleep 5
   else
     case ${choice} in
