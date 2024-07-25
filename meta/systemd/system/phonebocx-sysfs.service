@@ -1,3 +1,7 @@
+# This is imported from core on bootup, and is here as an
+# example of how to inject systemd services on boot. They
+# are installed and activated by meta/hooks/initrd
+
 [Unit]
 Description=Workaround to set sysinfo readable
 

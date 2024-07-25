@@ -1,12 +1,21 @@
 #!/bin/sh
 
+set -x
 echo Running core initrd hook
+# Import any files bundled in core
 for x in /root/pbx/core/meta/systemd/system/*; do
     [ ! -e $x ] && continue
     service=$(basename $x)
     echo "Found $service"
     cp $x /root/etc/systemd/system/$service
     # If it has an Install section, enable it
+    grep -q Install $x && /root/usr/bin/systemctl --root=/root enable $service
+done
+
+# Now loop through everything ELSE in there, and make sure it's activated
+for x in /root/etc/systemd/system/*.service; do
+    [ ! -f $x ] && continue
+    service=$(basename $x)
     grep -q Install $x && /root/usr/bin/systemctl --root=/root enable $service
 done
 
