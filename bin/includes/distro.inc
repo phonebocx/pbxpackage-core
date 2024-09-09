@@ -7,7 +7,7 @@ update_distfile() {
   local force=$1
   if [ ! "$distage" -o "$distage" == "0" ]; then
     if [ -e $dfile ]; then
-      distage=$(( $(date +%s) - $(stat --format=%Y $dfile) ))
+      distage=$(($(date +%s) - $(stat --format=%Y $dfile)))
     else
       distage=0
     fi
@@ -36,8 +36,8 @@ update_distfile() {
       if [ ! "$srcurl" ]; then
         dmisn=/sys/class/dmi/id/product_serial
         if [ -e $dmisn ]; then
-          serialno=$(tr -d -c '[:alnum:]' < $dmisn)
-        else 
+          serialno=$(tr -d -c '[:alnum:]' <$dmisn)
+        else
           serialno="unknown-no-dmi"
         fi
         osbuild=nospool
@@ -59,8 +59,8 @@ update_distfile() {
   ) 200>$distlock
   ERR=$?
   if [ "$ERR" == "56" ]; then
-    echo "Unable to get lock when trying to update latest!" > /dev/stderr
-    echo "Unable to get lock when trying to update latest!" > /dev/kmsg
+    echo "Unable to get lock when trying to update latest!" >/dev/stderr
+    echo "Unable to get lock when trying to update latest!" >/dev/kmsg
   fi
 
   if [ ! "$rfb" ]; then
@@ -98,7 +98,7 @@ get_download_url() {
   if [ -e "${dfile}" ]; then
     cat ${dfile}
   else
-    echo "http://example.com/latest-redirect";
+    echo "http://example.com/latest-redirect"
   fi
 }
 
@@ -116,4 +116,12 @@ is_upgrade_avail() {
   [ "$lut" -lt "$rut" ]
 }
 
-
+function get_sysinfo_val() {
+  if [ ! "$CORESQLITE" ]; then
+    echo "No coresqlite"
+    sleep 5
+    exit 99
+  fi
+  local k=$(echo $1 | tr -cd '[:alnum:]._-')
+  sqlite3 $CORESQLITE "select v from settings where k='$k'"
+}

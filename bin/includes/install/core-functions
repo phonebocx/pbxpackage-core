@@ -57,10 +57,7 @@ create_partitions() {
   [ ! "$(blkid $EFI_PARTITION | grep TYPE=)" ] && make_efi_filesystem $EFI_PARTITION
   [ ! "$(blkid $RECOVERY_PARTITION | grep TYPE=)" ] && make_recovery_filesystem $RECOVERY_PARTITION
   [ ! "$(blkid $CONF_PARTITION | grep TYPE=)" ] && make_filesystem "$CONF_PARTITION" ext4 $CONFLABEL "Configuration"
-  # If spool is encrypted, don't touch it here
-  if [ ! "$ENCRYPTSPOOL" ]; then
-    [ ! "$(blkid $SPOOL_PARTITION | grep TYPE=)" ] && make_filesystem "$SPOOL_PARTITION" ext4 $SPOOLLABEL "Spool"
-  fi
+  # Spool is always encrypted, and is managed/mounted by the boot scripts
 
   # Make sure the partitions now exist
   if [ ! "$(find_conf_partition)" ]; then

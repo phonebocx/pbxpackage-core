@@ -49,23 +49,9 @@ for d in /pbxdev/* /pbx/*; do
   [ ! "${packagespresent[$package]}" ] && packagespresent[$package]=$d
 done
 
-# Set this to something, and UUIDSRC to something persistent for the
-# crypto key.
-ENCRYPTSPOOL=
-UUIDSRC=/sys/class/dmi/id/product_uuid
-
 # There should be /distro/distrovars.sh which has all the variables in it
 # for branding and stuff
 [ -f /distro/distrovars.sh ] && . /distro/distrovars.sh
-
-if [ -e $UUIDSRC ]; then
-  UUID=$(cat $UUIDSRC 2>/dev/null)
-fi
-if [ "$ENCRYPTSPOOL" ]; then
-  SPOOLLABEL=spoolcrypt
-else
-  SPOOLLABEL=spool
-fi
 
 [ ! "$buildvers" ] && buildvers="$shortname $buildver"
 

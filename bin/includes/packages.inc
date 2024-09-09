@@ -1,6 +1,12 @@
 #!/bin/bash
 # vim: set ft=sh:
 
+get_pkg_display() {
+  echo "Currently installed packages:"
+  echo "$CDIR/../php/util.php --pkgdisplay"
+  echo ""
+}
+
 get_current_json() {
   $PHPBIN/util.php --pkgjson
 }
@@ -35,4 +41,3 @@ get_local_pkg_vers() {
   local p=$1
   $PHPBIN/util.php --pkgver $p
 }
-

@@ -19,4 +19,8 @@ for x in /root/etc/systemd/system/*.service; do
     grep -q Install $x && /root/usr/bin/systemctl --root=/root enable $service
 done
 
-[ -d /root/pbx/core/usrlocal ] && rsync -av /root/pbx/core/usrlocal/ /root/usr/local/
+# If core is pushing out a filesystem update, AND it's not disabled by
+# kernel params, merge them across
+if [ -d /root/pbx/core/filesystem ]; then
+    grep -q skipfs /proc/cmdline && rsync -av /root/pbx/core/filesystem/ /root/
+fi
