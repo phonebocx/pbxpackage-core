@@ -3,7 +3,7 @@
 
 get_pkg_display() {
   echo "Currently installed packages:"
-  echo "$CDIR/../php/util.php --pkgdisplay"
+  ../php/util.php --pkgdisplay
   echo ""
 }
 

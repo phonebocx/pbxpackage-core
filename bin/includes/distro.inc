@@ -117,11 +117,6 @@ is_upgrade_avail() {
 }
 
 function get_sysinfo_val() {
-  if [ ! "$CORESQLITE" ]; then
-    echo "No coresqlite"
-    sleep 5
-    exit 99
-  fi
   local k=$(echo $1 | tr -cd '[:alnum:]._-')
-  sqlite3 $CORESQLITE "select v from settings where k='$k'"
+  ../php/util.php --getsysinfo=$k
 }

@@ -6,7 +6,8 @@ include_component dialog/askinstall.sh
 include_component dialog/persistence.sh
 include_component dialog/update.sh
 include_component dialog/packageupdate.sh
-include_component install/grub-tools
+# This is for Clearly IP hardware, with a dedicated Run-mode LED
+include_component i2c.inc
 
 DIALOG_OK=0
 DIALOG_CANCEL=1
