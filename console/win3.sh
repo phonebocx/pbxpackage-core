@@ -1,3 +1,6 @@
 #!/bin/bash
 
-echo "$(date): This is watched and updated every 20 seconds by tmux"
+. ./console_wrapper_inc.sh
+
+tput clear
+launch_console win3

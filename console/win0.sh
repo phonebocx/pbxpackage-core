@@ -2,4 +2,8 @@
 
 . ./console_wrapper_inc.sh
 
-launch_console win0
+while :; do
+    launch_console win0
+    echo Exited with $?
+    sleep 5
+done

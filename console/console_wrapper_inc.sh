@@ -15,13 +15,11 @@ function get_script_loc() {
 
 function launch_console() {
     APPNAME=$1
-    echo "Launching $APPNAME"
-    sleep 1
     B=$(get_script_loc core bin/bootstrap.inc)
     if [ ! -x "$B" ]; then
         echo "Can't execute $B, or can't find bootstrap.inc, can not continue"
         sleep 5
-        continue
+        return
     fi
     cd $(dirname $B)
     . $B
@@ -29,9 +27,12 @@ function launch_console() {
     if [ ! -x "$W" ]; then
         echo "Can't execute $W from $APPNAME, or can not find it."
         sleep 5
-        continue
+        return
     fi
     . $W
-    echo "Exit with $?"
-    sleep 1
+    E=$?
+    if [ "$E" -gt 0 ]; then
+        echo "Exit with $?"
+        sleep 1
+    fi
 }
