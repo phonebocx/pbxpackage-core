@@ -7,9 +7,7 @@ use GuzzleHttp\Client;
 /** @package PhoneBocx */
 class PhoneBocx
 {
-    public static $baseurl = "http://repo.phonebo.cx";
     private static $me = false;
-    private $dbfiles = ["/spool" => "/spool/data/base.sq3", "/var/run" => "/var/run/phonebocx/base.sq3"];
     private $dbfile;
     private $dbh;
 
@@ -20,6 +18,11 @@ class PhoneBocx
             self::$me = new self;
         }
         return self::$me;
+    }
+
+    public static function getProdDbFilename()
+    {
+        return FileLocations::getProdDbFilename();
     }
 
     public static function checkDbStructure()
@@ -42,7 +45,7 @@ class PhoneBocx
     // Declare this private so it can't be instantiated accidentally
     private function __construct()
     {
-        foreach ($this->dbfiles as $d => $f) {
+        foreach (FileLocations::getDbFiles() as $d => $f) {
             // /spool will only be a directory if it is mounted
             if (is_dir($d)) {
                 $dirname = dirname($f);
@@ -72,6 +75,13 @@ class PhoneBocx
 
     public static function safeGet($dest, $url, $throw = true)
     {
+        $destdir = dirname($dest);
+        if (!is_dir($destdir)) {
+            throw new \Exception("$destdir is not a directory");
+        }
+        if (!is_writable($destdir)) {
+            throw new \Exception("$destdir is not writable");
+        }
         $client = new Client(["allow_redirects" => true]);
         $f = tempnam(dirname($dest), basename($dest));
         $params = ["sink" => $f];

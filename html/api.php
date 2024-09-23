@@ -1,10 +1,11 @@
 <?php
 
-use GoldLinux\API\Sysinfo;
+use PhoneBocx\API\Sysinfo;
 
 include __DIR__ . '/../php/boot.php';
 
-$uriarr = parse_url($_SERVER['REQUEST_URI']);
+$uri = $_SERVER['REQUEST_URI'] ?? "http://example.com/core/api/poll";
+$uriarr = parse_url($uri);
 $querystr = [];
 if (!empty($uriarr['query'])) {
     parse_str($uriarr['query'], $querystr);
@@ -24,5 +25,5 @@ switch ($cmd) {
 function genPoll()
 {
     $p = new Sysinfo();
-    return $p->respond();
+    print $p->respond();
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/php
 <?php
 
+use PhoneBocx\FileLocations;
 use PhoneBocx\PhoneBocx;
 
 include __DIR__ . "/../php/boot.php";
@@ -34,7 +35,7 @@ if ($action == "inifile") {
     foreach ($pbx->getSettings() as $k => $v) {
         $ini[] = "$k=" . escapeshellarg($v);
     }
-    file_put_contents("/var/run/phonebocx/sysinfo.ini", join("\n", $ini));
+    file_put_contents(FileLocations::getIniFileLocation(), join("\n", $ini));
     exit;
 }
 

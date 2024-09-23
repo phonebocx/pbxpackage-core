@@ -27,7 +27,6 @@ LATESTISO=$BASEURL/latest.iso
 
 BASEDIR=/var/run/distro
 LOGDIR=$BASEDIR/distrolog
-SYSINFO=$BASEDIR/sysinfo.ini
 
 OVERWRITE=yeah
 
@@ -58,10 +57,6 @@ done
 if [ ! -d $LOGDIR ]; then
   mkdir -p $LOGDIR
   chmod 777 $LOGDIR
-fi
-if [ ! -e $SYSINFO ]; then
-  touch $SYSINFO
-  chmod 777 $SYSINFO
 fi
 
 debug_msg() {

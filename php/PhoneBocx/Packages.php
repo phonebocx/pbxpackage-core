@@ -84,7 +84,7 @@ class Packages
             return false;
         }
         try {
-            $url = PhoneBocx::$baseurl . self::$pkgurl . "?os_build=$build";
+            $url = FileLocations::getBaseUrl() . self::$pkgurl . "?os_build=$build";
             PhoneBocx::safeGet($dest, $url, true);
         } catch (\Exception $e) {
             fclose($lockfh);
