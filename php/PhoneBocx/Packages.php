@@ -28,6 +28,28 @@ class Packages
         return $retarr;
     }
 
+    public static function getPackageReport()
+    {
+        $retarr = [];
+        foreach (self::getRemotePackages() as $p) {
+            $retarr[$p] = [
+                "update" => self::doesPkgNeedUpdate($p),
+                "remote" => self::getPkgVer(self::remotePkgInfo($p, true)),
+                "local" => self::getPkgVer(self::localPkgInfo($p, true)),
+            ];
+        }
+        foreach (self::getLocalPackages() as $p) {
+            if (empty($retarr[$p])) {
+                $retarr[$p] = [
+                    "remote" => "Not available",
+                    "local" => self::getPkgVer(self::localPkgInfo($p, true)),
+                    "update" => false,
+                ];
+            }
+        }
+        return $retarr;
+    }
+
     public static function getCurrentJson()
     {
         $refresh = time() - 300;

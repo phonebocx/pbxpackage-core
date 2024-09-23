@@ -23,15 +23,8 @@ class Sysinfo extends Base
             "systemname" => CoreInfo::getSysName(),
             "kernel" => CoreInfo::getKernelVersion(),
             "services" => CoreInfo::getServices(),
-            "packages" => [],
+            "packages" => Packages::getPackageReport(),
         ];
-        foreach (Packages::getRemotePackages() as $p) {
-            $retarr['packages'][$p] = [
-                "update" => Packages::doesPkgNeedUpdate($p),
-                "remote" => Packages::getPkgVer(Packages::remotePkgInfo($p, true)),
-                "local" => Packages::getPkgVer(Packages::localPkgInfo($p, true)),
-            ];
-        }
         return $retarr;
     }
 

@@ -7,7 +7,6 @@ use PhoneBocx\Queue;
 use PhoneBocx\Queue\Pdo\SqlitePdoQueue;
 use PhoneBocx\Queue\NoItemAvailableException;
 
-
 $dbfile = Queue::getSqliteFile();
 
 if (!is_dir(dirname($dbfile))) {

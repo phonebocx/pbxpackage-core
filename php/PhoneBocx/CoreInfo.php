@@ -42,7 +42,7 @@ class CoreInfo
         if (preg_match("/^Linux version ([^\s]+)/", $ver, $out)) {
             $retarr['kver'] = $out[1];
         }
-        if (preg_match("/SMP (.+)$/", $ver, $out)) {
+        if (preg_match("/SMP (?:PREEMPT_DYNAMIC )?(.+)$/", $ver, $out)) {
             $retarr['kbuild'] = $out[1];
         }
         return $retarr;
@@ -92,23 +92,20 @@ class CoreInfo
         return trim(file_get_contents($sn));
     }
 
-    public static function getRunningDist($vfile = "/etc/pbxversion")
+    public static function getRunningDist($vfile = "/distro/distrovars.json")
     {
         if (!file_exists($vfile)) {
-            $tmparr = ["PhoneBocx", "arr1a-arr1b-arr1c", "arr2", "arr3"];
-            // throw new \Exception("$vfile does not exist");
+            throw new \Exception("$vfile does not exist");
         } else {
-            $tmparr = explode(" ", trim(file_get_contents($vfile)));
+            $distro = json_decode(file_get_contents($vfile), true);
         }
-        $retarr = ["version" => 1, "utime" => 0, "fullbuild" => false, "build" => false, "rel" => false];
-        if ($tmparr[0] != "PhoneBocx") {
-            throw new \Exception("$vfile is not sane - " . json_encode($tmparr));
-        }
-        $retarr['fullbuild'] = $tmparr[1];
-        $buildarr = explode("-", $tmparr[1]);
-        $retarr['build'] = $buildarr[0];
-        $retarr['rel'] = $buildarr[1];
-        $retarr['utime'] = $tmparr[3];
+        $retarr = [
+            "version" => $distro['kernelver'],
+            "utime" => $distro['buildutime'],
+            "fullbuild" => $distro['buildver'],
+            "build" => "Build",
+            "rel" => "rel"
+        ];
         return $retarr;
     }
 
