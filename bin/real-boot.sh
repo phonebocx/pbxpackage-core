@@ -6,6 +6,10 @@ DIR="$(dirname "$(readlink -f "$0")")"
 
 set -x
 
+# Make sure our rundir is correct
+mkdir -p /var/run/phonebocx
+chmod 0777 /var/run/phonebocx
+
 include_component crypto.inc
 
 [ ! "$UUID" ] && UUID=/sys/class/dmi/id/product_uuid
@@ -26,23 +30,18 @@ if grep -q ' /spool ' /proc/mounts; then
   chmod 777 /spool/data
 fi
 
-# Check wireguard settings are correct
-SHOULDBE=$(wg pubkey </etc/wireguard/priv.key)
-ONDISK=$(cat /etc/wireguard/public)
-if [ "$SHOULDBE" != "$ONDISK" ]; then
-  wg pubkey </etc/wireguard/priv.key >/etc/wireguard/public 2>/dev/null
-fi
-
 # If any packages have an install hook, run it
 for p in ${!packagespresent[@]}; do
+  [ "$p" == "origcore" ] && continue
   PACKAGEDIR=${packagespresent[${p}]}
-  boothook=$PACKAGEDIR/meta/hooks/install.sh
+  PACKAGENAME=$p
+  boothook=$PACKAGEDIR/meta/hooks/install
   if [ -e $boothook ]; then
     . $boothook
   fi
 done
 
-HOSTNAME=default
+HOSTNAME=phonebocx
 
 include_component boot/hostname.inc
 include_component boot/webresources.inc

@@ -25,11 +25,11 @@ do_install() {
 
   mount_rw_conf_partition
   if [ "$FORCEDNAME" ]; then
-    echo "** Installing $FORCEDNAME ($NEWVERS) to $CONF_PARTITION at $WR_CONF"
+    echo "** Installing $FORCEDNAME ($NEWVERS) to $CONF_PARTITION"
     iname=$FORCEDNAME
     rootdir=$WR_CONF/boot/$FORCEDNAME
   else
-    echo "** Installing $NEWVERS to $CONF_PARTITION at $WR_CONF"
+    echo "** Installing $NEWVERS to $CONF_PARTITION"
     iname=$NEWVERS
     rootdir=$WR_CONF/boot/$NEWVERS
   fi

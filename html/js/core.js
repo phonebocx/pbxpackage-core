@@ -101,7 +101,7 @@ function parsePollResp(data) {
         h += "</li>";
         $("#pkglist").append(h);
     });
-    var d = new Date()
+    var d = new Date();
     $("#lastpoll").text(d.toString());
     $("#devstatus").text("Unavailable");
     genNetInfo(data.networkints);

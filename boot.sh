@@ -9,4 +9,5 @@ if [ ! -e ./bin/real-boot.sh ]; then
     exit 99
 fi
 
-exec ./bin/real-boot.sh
+# |& means 'redirect all file descriptors', not just stderr
+./bin/real-boot.sh |& tee /var/log/pbxboot.log

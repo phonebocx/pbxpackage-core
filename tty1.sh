@@ -1,7 +1,10 @@
 #!/bin/bash
 
-COREDIR="$(dirname "$(readlink -f "$0")")"
-$COREDIR/bin/mainmenu.sh
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
 
-echo "Sleeping 1 sec before restart in $COREDIR"
+echo "This is tty1"
+cd ./console
+sleep 1
+tmux -u new-session -s console "tmux source-file ./console.tmux"
 sleep 1
