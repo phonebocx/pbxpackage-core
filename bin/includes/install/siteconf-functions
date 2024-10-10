@@ -59,9 +59,18 @@ mount_siteconf() {
   pmount=/persist
   if [ ! "$scdev" ]; then
     # It's not mounted. Create if needed, and mount it somewhere.
-    # By default it lives on the recovery volume.
-    mount_recovery_partition
-    scdev=${RCMOUNT}/siteconf
+    # It lives on the recovery volume on new systems, or in the
+    # run/live/medium folder on older ones
+    RECOVERY_PARTITION=$(find_recovery_partition)
+    # If there's NOT a recovery partition, it has to be in /run/live/medium
+    # TODO: What happens when this is used on a new machine?
+    if [ ! "$RECOVERY_PARTITION" ]; then
+      scdev=/run/live/medium/siteconf
+      mount -o remount,rw $(dirname $scdev)
+    else
+      mount_recovery_partition
+      scdev=${RCMOUNT}/siteconf
+    fi
     if [ ! -e $scdev ]; then
       echo -n "** Creating recovery image:  "
       progress_indicator start

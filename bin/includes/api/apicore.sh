@@ -4,7 +4,6 @@
 include_component api/parsedownload.sh
 include_component api/parsecommand.sh
 include_component api/parselog.sh
-include_component api/parseinfo.sh
 include_component api/parseapicmd.sh
 
 BASEAPI=https://api.sendfax.to
@@ -129,18 +128,18 @@ function parseResponse() {
     tmpfile=$(mktemp)
     echo "$l" >$tmpfile
     parseResponseLine $tmpfile
-    for hook in $CDIR/../../*/meta/hooks/parseresp; do
-      [ ! -e "$hook" ] && continue
-      # echo $hook -f $tmpfile
-      $hook -f $tmpfile
-    done
+    HOOKPARAMS="-f $tmpfile"
+    trigger_hooks parseresp
     rm -f $tmpfile
   done
 
-  # Generate sysinfo.ini because it's useful
+  # Generate sysinfo.ini because it's useful. Note that
+  # CDIR prefers /pbxdev over /pbx, it may not be running
+  # the one you're expecting!
   [ -e $CDIR/php/sysinfo.php ] && $CDIR/php/sysinfo.php -i
 
   # Now, if there was an api callback, do that.
+  #  -- queuefile is set in api.inc
   if [ ! "$recursion" -a -e "$queuefile" ]; then
     parseResponse $queuefile true
     rm -f $queuefile
@@ -156,13 +155,11 @@ function parseResponseLine() {
 
   for id in $(jq -r '.actions | keys[]' $json); do
     local type=$(jq -r ".actions[$id].type" $json)
-    # echo Hi $id you are $type
+    # meta/hooks/parseresp handles info lines
     [ "$type" == "files" ] && parseDownload $1 $id
     [ "$type" == "command" ] && parseCommand $1 $id
     [ "$type" == "b64command" ] && parseB64Command $1 $id
     [ "$type" == "log" ] && parseLog $1 $id
-    # No longer using bash for this, core/meta/hooks/parseresp now does this
-    # [ "$type" == "info" ] && parseInfo $1 $id
     [ "$type" == "api" ] && parseApiCmd $1 $id
   done
 }

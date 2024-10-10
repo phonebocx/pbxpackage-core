@@ -5,19 +5,18 @@ cd $DIR
 
 . ./bootstrap.inc.sh
 
-# include_component api.inc
-
-trigger_hooks parseresp onlycore
-exit
+include_component api.inc
 
 echo "Requesting authentication tokens..."
 tmpfile=/tmp/boot
 rm -f /tmp/boot
 #tmpfile=$(mktemp)
-genCurl startup "" fullapidata
+genCurl poll
+#genCurl startup "" fullapidata
 echo $CURL -o $tmpfile
 $CURL -o $tmpfile
 cat $tmpfile
+set -x
 parseResponse $tmpfile
 exit
 rm -f $tmpfile

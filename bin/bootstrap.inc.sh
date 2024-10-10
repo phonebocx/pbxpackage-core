@@ -48,6 +48,9 @@ for d in /pbxdev/* /pbx/*; do
   [ ! "${packagespresent[$package]}" ] && packagespresent[$package]=$d
 done
 
+# CDIR is the 'best' coredir, not neccesarily this one.
+CDIR=${packagespresent["core"]}
+
 # There should be /distro/distrovars.sh which has all the variables in it
 # for branding and stuff
 [ -f /distro/distrovars.sh ] && . /distro/distrovars.sh
@@ -93,6 +96,12 @@ include_component() {
 #  Usage 2:
 #    trigger_hooks hookname onlypackagename
 #    Eg, 'trigger_hooks install onlycore'
+#
+# BONUS: You might need to hand some params to the hook.
+# If so, set the "HOOKPARAMS" variable before calling this.
+#
+# IMPORTANT: As I don't trust myself, it is unset before returning.
+#
 trigger_hooks() {
   hookname=$1
   pkgfilter=$2
@@ -136,7 +145,10 @@ trigger_hooks() {
     PACKAGENAME=$p
     HOOKFILE="$PACKAGEDIR/meta/hooks/$hookname"
     if [ -x "$HOOKFILE" ]; then
-      . $HOOKFILE
+      . $HOOKFILE $HOOKPARAMS
     fi
   done
+  # You'll need to reset this if you're trying call trigger_hooks
+  # in some smart way.
+  unset HOOKPARAMS
 }
