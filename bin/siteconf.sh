@@ -7,5 +7,9 @@ cd $DIR
 
 include_component install.inc
 
-mount_siteconf
+set -x
 
+if does_siteconf_need_migration; then
+    echo "I wanna migrate things"
+    migrate_siteconf
+fi

@@ -41,7 +41,7 @@ create_partitions() {
   create_if_needed "Legacy Boot" $d 1 legacy
   create_if_needed "EFI Volume" $d 2 efi "+256M"
   create_if_needed "Recovery" $d 3 recovery "+2G"
-  create_if_needed "Configuration" $d 4 conf "+10G"
+  create_if_needed "Config" $d 4 conf "+10G"
   create_if_needed "Spool" $d 5 $SPOOLLABEL "0"
 
   partprobe $DEV

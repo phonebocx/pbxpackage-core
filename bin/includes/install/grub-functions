@@ -90,7 +90,6 @@ install_grub_theme() {
 generate_grub_cfg() {
   install_grub_theme $1
   OUTFILE="$1/grub.cfg"
-  echo Generating $OUTFILE
   DEBUG_OPTIONS="$GRUB_OPTIONS debug systemd.log_level=info"
   GRUBNAME=$(get_grub_name)
   get_valid_boots

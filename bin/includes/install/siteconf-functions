@@ -1,5 +1,7 @@
 #!/bin/bash
 
+include_component install/siteconf-migrate
+
 siteconf_checks() {
   mount_siteconf
   gen_persistenceconf >${SCMOUNT}/persistence.conf
@@ -62,11 +64,10 @@ mount_siteconf() {
     # It lives on the recovery volume on new systems, or in the
     # run/live/medium folder on older ones
     RECOVERY_PARTITION=$(find_recovery_partition)
-    # If there's NOT a recovery partition, it has to be in /run/live/medium
-    # TODO: What happens when this is used on a new machine?
+    # If there's NOT a recovery partition, crash and burn
     if [ ! "$RECOVERY_PARTITION" ]; then
-      scdev=/run/live/medium/siteconf
-      mount -o remount,rw $(dirname $scdev)
+      echo "Recovery Partition does not"
+      exit
     else
       mount_recovery_partition
       scdev=${RCMOUNT}/siteconf
