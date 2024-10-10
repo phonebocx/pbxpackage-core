@@ -1,6 +1,4 @@
 #!/bin/bash
 
-. ./console_wrapper_inc.sh
-
 tput clear
-launch_console win1
+./console_launch.sh win1

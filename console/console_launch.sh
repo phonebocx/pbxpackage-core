@@ -36,3 +36,5 @@ function launch_console() {
         sleep 1
     fi
 }
+
+launch_console $1

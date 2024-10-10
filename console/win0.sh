@@ -1,9 +1,14 @@
 #!/bin/bash
 
-. ./console_wrapper_inc.sh
-
 while :; do
-    launch_console win0
-    echo Exited with $?
-    sleep 5
+    ./console_launch.sh win0
+    status=$?
+    if [ "$status" == "5" ]; then
+        tput clear
+        echo "Updating."
+        sleep 5
+        exit
+    fi
+    echo "Restarting main menu, status was $status"
+    sleep 1
 done

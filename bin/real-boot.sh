@@ -31,15 +31,8 @@ if grep -q ' /spool ' /proc/mounts; then
 fi
 
 # If any packages have an install hook, run it
-for p in ${!packagespresent[@]}; do
-  [ "$p" == "origcore" ] && continue
-  PACKAGEDIR=${packagespresent[${p}]}
-  PACKAGENAME=$p
-  boothook=$PACKAGEDIR/meta/hooks/install
-  if [ -e $boothook ]; then
-    . $boothook
-  fi
-done
+#   (This function is in bootstrap.inc.sh)
+trigger_hooks install
 
 HOSTNAME=phonebocx
 

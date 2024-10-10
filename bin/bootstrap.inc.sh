@@ -85,3 +85,58 @@ include_component() {
     . ${fullpath}
   fi
 }
+
+# Slightly complicated code here.
+#  Usage 1:
+#    trigger_hooks hookname "packages to exclude"
+#    In quotes, with spaces seperating them
+#  Usage 2:
+#    trigger_hooks hookname onlypackagename
+#    Eg, 'trigger_hooks install onlycore'
+trigger_hooks() {
+  hookname=$1
+  pkgfilter=$2
+  declare -A skippkgs
+  if [ "${pkgfilter:0:4}" == "only" ]; then
+    onlypackage=${pkgfilter:4}
+    if [ "$onlypackage" == "core" ]; then
+      onlypackage="realcore"
+    fi
+  else
+    onlypackage=""
+    for x in $pkgfilter; do
+      skippkgs["${x}"]=true
+    done
+    # Never run any hook from origcore
+    skippkgs["origcore"]=always
+    # If we were told to skip core, ALSO add realcore
+    if [ "${skippkgs["core"]}" ]; then
+      skippkgs["realcore"]=core
+    fi
+  fi
+
+  # Always run core hooks before any others, so cheat by calling it "realcore"
+  for p in realcore ${!packagespresent[@]}; do
+    if [[ "$onlypackage" && "$onlypackage" != "$p" ]]; then
+      continue
+    fi
+    if [ "${skippkgs["$p"]}" ]; then
+      # Package is excluded
+      continue
+    fi
+    if [ "$p" == "core" ]; then
+      # We would have already run 'realcore' below if we were meant to
+      continue
+    fi
+    if [ "$p" == "realcore" ]; then
+      # It's core, not realcore
+      p="core"
+    fi
+    PACKAGEDIR=${packagespresent[${p}]}
+    PACKAGENAME=$p
+    HOOKFILE="$PACKAGEDIR/meta/hooks/$hookname"
+    if [ -x "$HOOKFILE" ]; then
+      . $HOOKFILE
+    fi
+  done
+}
