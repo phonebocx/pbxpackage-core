@@ -1,6 +1,14 @@
 #!/bin/bash
 
-mount -o remount,rw /run/live/medium
-touch /run/live/medium/redo-siteconf
-sync
-/sbin/reboot -f
+
+DIR="$(dirname "$(readlink -f "$0")")"
+cd $DIR
+. ./bootstrap.inc.sh
+
+include_component install.inc
+include_component dialog.inc
+
+
+set -x
+update_distfile force
+#remote_update

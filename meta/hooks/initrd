@@ -5,7 +5,6 @@ echo Running core initrd hook
 for x in /root/pbx/core/meta/systemd/system/*; do
     [ ! -e $x ] && continue
     service=$(basename $x)
-    echo "Found $service"
     cp $x /root/etc/systemd/system/$service
     # If it has an Install section, enable it
     grep -q Install $x && /root/usr/bin/systemctl --root=/root enable $service

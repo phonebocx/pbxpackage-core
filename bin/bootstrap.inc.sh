@@ -3,7 +3,6 @@
 
 COREDIR="$(dirname "$(readlink -f "$0")")"
 INCDIR="$COREDIR/includes"
-PHPBIN="$COREDIR/php"
 
 export DIALOGRC=$COREDIR/dialogrc
 
@@ -50,6 +49,7 @@ done
 
 # CDIR is the 'best' coredir, not neccesarily this one.
 CDIR=${packagespresent["core"]}
+PHPBIN="$CDIR/php"
 
 # There should be /distro/distrovars.sh which has all the variables in it
 # for branding and stuff

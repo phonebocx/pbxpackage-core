@@ -119,7 +119,7 @@ class CoreInfo
             "osbuild" => $settings['os_build'] ?? "Normal",
             "devmode" => $settings['devmode'] ?? null,
         ];
-        return FileLocations::getBaseUrl() . "/latest?" . http_build_query($params);
+        return FileLocations::getDistUrl() . "/nlatest?" . http_build_query($params);
     }
 
     public static function getLatestDist($refresh = false)

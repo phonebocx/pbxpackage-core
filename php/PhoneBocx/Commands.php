@@ -10,6 +10,7 @@ class Commands
             "checksysinfo" => ["help" => "Checks the sysinfo table.", "callable" => Commands::class . "::checkSysInfoDb", "priority" => true],
             "pkgdisplay" => ["help" => "Display currently installed packages", "callable" => Commands::class . "::showLocalPackages", "print" => true],
             "getsysinfo" => ["help" => "Get a sysinfo val", "callable" => Commands::class . "::getSysInfoVal", "print" => true],
+            "disturl" => ["help" => "Get the URL to check for the latest ISO", "callable" => Commands::class . "::getDistURL", "print" => true],
         ];
     }
 
@@ -31,5 +32,10 @@ class Commands
         $pb = PhoneBocx::create();
         $allkeys = $pb->getSettings();
         return json_encode($allkeys);
+    }
+
+    public static function getDistURL()
+    {
+        return CoreInfo::getLatestUrl();
     }
 }
