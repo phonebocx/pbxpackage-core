@@ -1,6 +1,5 @@
 #!/bin/sh
 
-set -x
 echo Running core initrd hook
 # Import any files bundled in core
 for x in /root/pbx/core/meta/systemd/system/*; do
@@ -23,4 +22,10 @@ done
 # kernel params, merge them across
 if [ -d /root/pbx/core/filesystem ]; then
     grep -q skipfs /proc/cmdline && rsync -av /root/pbx/core/filesystem/ /root/
+fi
+
+scfix=/root/pbx/core/bin/siteconf.sh
+if [ -x $scfix ]; then
+    echo "Running Siteconf fixer $scfix"
+    $scfix
 fi

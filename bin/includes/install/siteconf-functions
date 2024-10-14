@@ -105,13 +105,14 @@ mount_siteconf() {
 
   # We should never be here, as we shouldn't have known about the label if it wasn't
   # mounted, but maybe we did.
+  set -x
   echo "Hmm $scdev This is probably a bug. Tell someone"
   grep $scdev /proc/mounts
   mkdir -p ${pmount}
   mount ${scdev} ${pmount}
   SCWASMOUNTED=yes
   SCMOUNT=${pmount}
-  sleep 100
+  sleep 30
 }
 
 unmount_siteconf() {

@@ -6,17 +6,48 @@ does_siteconf_need_migration() {
   [ -e "$oldscdev" ]
 }
 
+# This is only for testing and validation of the code.
+check_redo_siteconf_migration() {
+  r=/run/live/medium/redo-siteconf
+  src=/run/live/medium/oldsiteconf
+  dst=/run/live/medium/siteconf
+  if [ -e "$r" ]; then
+    mount -o remount,rw /run/live/medium
+    if [ -e "$src" ]; then
+      rm -f $dst
+      mv $src $dst
+    fi
+    RECOVERY_PARTITION=$(find_recovery_partition)
+    if [ "$RECOVERY_PARTITION" ]; then
+      wipefs --all --force $RECOVERY_PARTITION
+    fi
+    rm -f $r
+    mount -o remount,ro /run/live/medium
+    sync
+    echo "Rebooting again"
+    sleep 1
+    /sbin/reboot -f
+  fi
+}
+
 migrate_siteconf() {
   create_missing_recovery
-  echo "Now I have $RECOVERY_PARTITION"
   mount_siteconf
   mount_old_siteconf
   copy_old_siteconf_to_new
+  unmount_siteconf
+  unmount_recovery_partition
+  umount /oldpersist
+  mv /run/live/medium/siteconf /run/live/medium/oldsiteconf
+  sync
+  echo "Rebooting again"
+  sleep 1
+  /sbin/reboot -f
 }
 
 copy_old_siteconf_to_new() {
-  echo -n "Copying old recovery data..."
-  echo "rsync --exclude 'root/' -av /oldpersist/ /persist/"
+  echo -n " ** Copying old recovery data..."
+  rsync --exclude 'root/' -a /oldpersist/ /persist/
 }
 
 cleanup_siteconf_migration() {
@@ -26,6 +57,7 @@ cleanup_siteconf_migration() {
 
 mount_old_siteconf() {
   mkdir /oldpersist
+  mount -o remount,rw /run/live/medium
   mount /run/live/medium/siteconf /oldpersist
 }
 
