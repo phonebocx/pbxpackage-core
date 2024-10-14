@@ -66,7 +66,7 @@ mount_siteconf() {
     RECOVERY_PARTITION=$(find_recovery_partition)
     # If there's NOT a recovery partition, crash and burn
     if [ ! "$RECOVERY_PARTITION" ]; then
-      echo "Recovery Partition does not"
+      echo "Recovery Partition does not exist"
       exit
     else
       mount_recovery_partition
@@ -75,7 +75,11 @@ mount_siteconf() {
     if [ ! -e $scdev ]; then
       echo -n "** Creating recovery image:  "
       progress_indicator start
-      truncate --size=1G $scdev
+      # This needs to figure out how big the partition is
+      # and create siteconf so it's 90% the size of it.
+      # Unfortunately, the original image only created
+      # a 1G recovery partition, which is now 2G
+      truncate --size=1000M $scdev
       O=$(mkfs.ext4 -F $scdev -L siteconf 2>&1)
       status=$?
       progress_indicator stop
