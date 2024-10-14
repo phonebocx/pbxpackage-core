@@ -23,6 +23,6 @@ fi
 # To make sure we can roll back, old sshd doesn't understand the 'Include'
 # keyword. Which means ssh breaks if you try to roll back. This is not
 # a good thing when we want to fix things!
-for s in /root/etc/ssh/rw/sshd_config /etc/ssh/rw/sshd_config; do
+for s in /root/etc/ssh/sshd_config /etc/ssh/sshd_config; do
     [ -e $s ] && sed -i 's/^Include/# Include/' $s
 done
