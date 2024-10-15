@@ -67,6 +67,7 @@ mount_siteconf() {
     # If there's NOT a recovery partition, crash and burn
     if [ ! "$RECOVERY_PARTITION" ]; then
       echo "Recovery Partition does not exist"
+      sleep 10
       exit
     else
       mount_recovery_partition

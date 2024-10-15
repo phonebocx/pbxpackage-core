@@ -75,6 +75,8 @@ create_missing_recovery() {
         echo "** Upgrading Recovery Partition"
         mkdosfs -F 32 -s 1 -n recovery $d
         RECOVERY_PARTITION=$d
+        # This is needed so that /dev/disk/by-id and the rest are updated
+        partprobe $d
         return
       fi
     fi
