@@ -64,7 +64,7 @@ while :; do
 
   # Make sure it's empty from last time
   unset choice
-  get_assoc_menu "$brandname" "\nPwease select an option from below\n"
+  get_assoc_menu "$brandname" "\nPlease select an option from below\n"
 
   if [ ! "$choice" ]; then
     exit
@@ -74,8 +74,8 @@ while :; do
   if [ "${assocfunctions[${choice}]}" ]; then
     callfunc=${assocfunctions[${choice}]}
     $callfunc
-    echo "$callfunc finished"
-    sleep 5
+    #echo "$callfunc finished"
+    #sleep 5
   else
     case ${choice} in
     "11devel")

@@ -46,7 +46,7 @@ migrate_siteconf() {
 }
 
 copy_old_siteconf_to_new() {
-  echo -n " ** Copying old recovery data..."
+  echo -n "** Copying old recovery data..."
   rsync --exclude 'root/' -a /oldpersist/ /persist/
 }
 
@@ -72,10 +72,9 @@ create_missing_recovery() {
       CURRENTFS=$(lsblk -n -f $d | head -1 | awk '{ print $2 }')
       if [ ! "$CURRENTFS" ]; then
         # Awesome. We can just create it, there's nothing there.
-        echo " ** Upgrading Recovery Partition"
+        echo "** Upgrading Recovery Partition"
         mkdosfs -F 32 -s 1 -n recovery $d
         RECOVERY_PARTITION=$d
-        partprobe $d
         return
       fi
     fi

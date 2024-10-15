@@ -6,9 +6,7 @@ cd $DIR
 . ./bootstrap.inc.sh
 
 include_component install.inc
-include_component dialog.inc
-
+include_component distro.inc
 
 set -x
-update_distfile force
-#remote_update
+is_upgrade_avail

@@ -30,27 +30,15 @@ update_distfile() {
     flock -w 10 200 || exit 56
     if [ ! -e $dfile ]; then
       utilphp=$PHPBIN/util.php
-      if [ -e $utilphp ]; then
-        srcurl=$($utilphp --disturl 2>/dev/null)
-      fi
+      srcurl=$($utilphp --disturl 2>/dev/null)
       if [ ! "$srcurl" ]; then
-        dmisn=/sys/class/dmi/id/product_serial
-        if [ -e $dmisn ]; then
-          serialno=$(tr -d -c '[:alnum:]' <$dmisn)
-        else
-          serialno="unknown-no-dmi"
-        fi
-        osbuild=nospool
-        eid=none
-        if [ -e "$CORESQLITE" ]; then
-          osbuild=$(sqlite3 $CORESQLITE "select v from settings where k='os_build'" 2>/dev/null)
-          eid=$(sqlite3 $CORESQLITE "select v from settings where k='eid'" 2>/dev/null)
-        fi
-        srcurl="$BASEURL/latest?serial=$serialno&osbuild=$osbuild&eid=$eid"
+        # Something broke the local PHP? we can't do anything
+        exit
       fi
       rm -f $dfile.meta $dfile.sha256
-      curl -sf $srcurl -o $dfile 2>/dev/null
-      if [ -e "$dfile" ]; then
+      curl -Lsf $srcurl -o $dfile 2>/dev/null
+      # If it exists and is not empty
+      if [ -s "$dfile" ]; then
         curl -sf $(cat $dfile).meta -o $dfile.meta 2>/dev/null
         curl -sf $(cat $dfile).sha256 -o $dfile.sha256 2>/dev/null
       fi
@@ -61,10 +49,12 @@ update_distfile() {
   if [ "$ERR" == "56" ]; then
     echo "Unable to get lock when trying to update latest!" >/dev/stderr
     echo "Unable to get lock when trying to update latest!" >/dev/kmsg
+    sleep 5
+    return
   fi
 
   if [ ! "$rfb" ]; then
-    if [ -e $dfile.meta ]; then
+    if [ -s $dfile.meta ]; then
       rfb=$(grep 'fullbuild=' $dfile.meta | cut -d= -f2)
       rut=$(grep 'utime=' $dfile.meta | cut -d= -f2)
     else
@@ -73,12 +63,13 @@ update_distfile() {
     fi
   fi
   if [ ! "$lfb" ]; then
-    if [ ! -e /etc/osversion ]; then
-      lfb="2021.000-000"
+    dvars=/distro/distrovars.json
+    if [ ! -e $dvars ]; then
+      lfb="2024.000-000"
       lut="0"
     else
-      lfb=$(cut -d\  -f2 /etc/osversion)
-      lut=$(cut -d\  -f4 /etc/osversion)
+      lfb=$(jq -r .buildver $dvars)
+      lut=$(jq -r .buildutime $dvars)
     fi
   fi
 }

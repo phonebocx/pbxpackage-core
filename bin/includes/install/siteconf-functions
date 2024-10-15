@@ -95,24 +95,18 @@ mount_siteconf() {
     mkdir -p ${pmount}
     mount ${scdev} ${pmount}
   fi
-  # Now scdev is something like /dev/loop1 or /dev/sdb or whatever. Find where
-  # is is mounted (if it was new, it's at $pmount, otherwise it could be anywhere)
+  # Now scdev is something like /dev/loop1 or /dev/sdb or whatever. We want it
+  # at $pmount, so make sure it's there.
   SCMOUNT=$(grep " ${pmount} ext4 " /proc/mounts | head -1 | cut -d\  -f2)
   if [ "$SCMOUNT" ]; then
     # Found it!
     return
   fi
-
-  # We should never be here, as we shouldn't have known about the label if it wasn't
-  # mounted, but maybe we did.
-  set -x
-  echo "Hmm $scdev This is probably a bug. Tell someone"
-  grep $scdev /proc/mounts
+  # Nope. Mount it there.
   mkdir -p ${pmount}
   mount ${scdev} ${pmount}
   SCWASMOUNTED=yes
   SCMOUNT=${pmount}
-  sleep 30
 }
 
 unmount_siteconf() {

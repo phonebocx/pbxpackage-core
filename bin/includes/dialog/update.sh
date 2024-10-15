@@ -14,7 +14,7 @@ remote_update() {
 
   if [ -e /tmp/devel ]; then
     get_string "Update Source" "\nPlease enter the URL to pull an update from\n\nThis probably will not be configurable.\n\n" "$iso"
-    url=$(<$outfile)
+    url=$(<$dialog_outfile)
     if [ ! "$url" ]; then
       return
     fi
@@ -51,7 +51,7 @@ remote_update() {
     if [ "$currentsha" != "$sha" ]; then
       rm -f $SRC_ROOT
       infobox "Checksum Error!" "\nThe file $isofile had the checksum $currentsha, it should have been $sha.\n\nThe file has been deleted."
-      sleep 10
+      sleep 3
       return
     fi
     mount_iso
@@ -61,7 +61,7 @@ remote_update() {
   ERR=$?
   if [ "$ERR" == "56" ]; then
     infobox "Unable to Lock" "\nAn update is currently being performed.\n\nPlease try again later."
-    sleep 10
+    sleep 3
     return
   fi
 }
@@ -99,7 +99,7 @@ update_from_folder() {
 
   if [ -e /tmp/devel ]; then
     get_string "Updating $DRIVE" "\nPlease enter the name for this image.\n\nYou can not overwrite the current running image, so you may need to chose a new name.\n" "$newver"
-    name=$(cat $outfile | tr -c -d '[:graph:]' | tr -d ';&*')
+    name=$(cat $dialog_outfile | tr -c -d '[:graph:]' | tr -d ';&*')
     if [ ! "$name" ]; then
       grep -q " $SRC_ROOT " /proc/mounts && umount $SRC_ROOT
       return
