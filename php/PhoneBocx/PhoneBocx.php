@@ -3,13 +3,18 @@
 namespace PhoneBocx;
 
 use GuzzleHttp\Client;
+use PhoneBocx\Models\HookModel;
 
 /** @package PhoneBocx */
 class PhoneBocx
 {
     private static $me = false;
+    private static ?string $basedir = null;
+
     private $dbfile;
     private $dbh;
+    private array $phphooks;
+    private Hooks $h;
 
     /** @return PhoneBocx */
     public static function create()
@@ -18,6 +23,22 @@ class PhoneBocx
             self::$me = new self;
         }
         return self::$me;
+    }
+
+    public static function getBaseDir($default = '/var/run/distro'): string
+    {
+        if (self::$basedir === null) {
+            self::$basedir = getenv('BASEDIR');
+            if (!self::$basedir) {
+                self::$basedir = $default;
+            }
+            // If it doesn't exist, create it!
+            if (!is_dir(self::$basedir)) {
+                mkdir(self::$basedir);
+                chmod(self::$basedir, 0777);
+            }
+        }
+        return self::$basedir;
     }
 
     public static function getProdDbFilename()
@@ -45,6 +66,7 @@ class PhoneBocx
     // Declare this private so it can't be instantiated accidentally
     private function __construct()
     {
+        $dbfound = false;
         foreach (FileLocations::getDbFiles() as $d => $f) {
             // /spool will only be a directory if it is mounted
             if (is_dir($d)) {
@@ -66,11 +88,44 @@ class PhoneBocx
                     $dbh = $this->getPdo();
                     $dbh->query('CREATE TABLE IF NOT EXISTS settings ( k TEXT PRIMARY KEY, v TEXT )');
                 }
-                return true;
+                $dbfound = true;
+                break;
             }
         }
-        // We somehow didn't manage to find somewhere to put our sqlite file??
-        throw new \Exception("Couldn't find where to put sqlite file");
+        if (!$dbfound) {
+            // We somehow didn't manage to find somewhere to put our sqlite file??
+            throw new \Exception("Couldn't find where to put sqlite file");
+        }
+        $this->refreshHooks();
+        return $this;
+    }
+
+    /**
+     * Refresh the hook object. Can be used to block a hook
+     * being run, or modify it or whatever.
+     *
+     * @return Hooks
+     */
+    public function refreshHooks(): Hooks
+    {
+        $this->phphooks = [];
+        foreach (Packages::getLocalPackages() as $p => $pdir) {
+            $hookfile = "$pdir/meta/hooks/phphooks.php";
+            if (file_exists($hookfile)) {
+                $hooksettings = include($hookfile);
+                $this->phphooks[$p] = ["dir" => $pdir, "hookfile" => $hookfile, "hooks" => $hooksettings];
+            }
+        }
+        $this->h = new Hooks($this, $this->phphooks);
+        return $this->h;
+    }
+
+    public function triggerHook(string $hookname, array $params = []): array
+    {
+        $model = new HookModel($params);
+        // Note that the HookModel is returned in __model if you can't pass
+        // your params by ref.
+        return $this->h->trigger($hookname, $model);
     }
 
     public static function safeGet($dest, $url, $throw = true)

@@ -32,7 +32,7 @@ pcount=$(get_port_count)
 if [ "$pcount" -eq 0 ]; then
   echo "    No DAHDI Hardware detected"
 else
-  get_dahdi_scan | $DIR/../php/util.php --parsedahdiscan
+  get_dahdi_scan | $CDIR/php/util.php --parsedahdiscan
 fi
 echo ""
 get_pkg_display

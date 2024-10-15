@@ -24,7 +24,7 @@ BASEURL=https://repo.phonebo.cx
 API=https://api.phonebo.cx/api
 LATESTISO=$BASEURL/latest.iso
 
-BASEDIR=/var/run/distro
+export BASEDIR=/var/run/distro
 LOGDIR=$BASEDIR/distrolog
 
 OVERWRITE=yeah
@@ -47,9 +47,12 @@ for d in /pbxdev/* /pbx/*; do
   [ ! "${packagespresent[$package]}" ] && packagespresent[$package]=$d
 done
 
+export packagespresent
+
 # CDIR is the 'best' coredir, not neccesarily this one.
 CDIR=${packagespresent["core"]}
 PHPBIN="$CDIR/php"
+UTILPHP="$PHPBIN/util.php"
 
 # There should be /distro/distrovars.sh which has all the variables in it
 # for branding and stuff

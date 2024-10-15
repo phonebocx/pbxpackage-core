@@ -6,12 +6,18 @@ class Commands
 {
     public static function getCommands()
     {
-        return [
+        $commands = [
             "checksysinfo" => ["help" => "Checks the sysinfo table.", "callable" => Commands::class . "::checkSysInfoDb", "priority" => true],
             "pkgdisplay" => ["help" => "Display currently installed packages", "callable" => Commands::class . "::showLocalPackages", "print" => true],
             "getsysinfo" => ["help" => "Get a sysinfo val", "callable" => Commands::class . "::getSysInfoVal", "print" => true],
             "disturl" => ["help" => "Get the URL to check for the latest ISO", "callable" => Commands::class . "::getDistURL", "print" => true],
+            "parsedahdiscan" => ["help" => "Parse the output of get_dahdi_scan", "callable" => PortStatus::class . "::parseDahdiScanStdin", "print" => true],
+            "parseresp" => ["help" => "Parse API Response", "callable" => ParseApiResp::class . "::launch", "print" => true],
         ];
+        // Important: Pass by ref!
+        $params = ["commands" => &$commands];
+        PhoneBocx::create()->triggerHook("commands", $params);
+        return $commands;
     }
 
     public static function showLocalPackages()

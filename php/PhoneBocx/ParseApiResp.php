@@ -7,6 +7,12 @@ class ParseApiResp
     private $lines = [];
     private $pb;
 
+    public static function launch(string $file)
+    {
+        $p = new ParseApiResp($file);
+        $p->go();
+    }
+
     public function __construct($file)
     {
         if (!file_exists($file)) {

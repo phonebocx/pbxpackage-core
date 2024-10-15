@@ -128,7 +128,7 @@ function parseResponse() {
     tmpfile=$(mktemp)
     echo "$l" >$tmpfile
     parseResponseLine $tmpfile
-    HOOKPARAMS="-f $tmpfile"
+    HOOKPARAMS="$tmpfile"
     trigger_hooks parseresp
     rm -f $tmpfile
   done

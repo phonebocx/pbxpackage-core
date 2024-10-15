@@ -3,7 +3,7 @@
 
 get_pkg_display() {
   echo "Currently installed packages:"
-  ../php/util.php --pkgdisplay
+  $PHPBIN/util.php --pkgdisplay
   echo ""
 }
 

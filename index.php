@@ -1,7 +1,10 @@
 <?php
 // Scaffolding for the html interface
 
+use PhoneBocx\Packages;
 use PhoneBocx\WebAuth;
+
+include __DIR__ . "/php/boot.php";
 
 $html = [
   "favicon" => "/core/sendfax.ico",
@@ -14,49 +17,27 @@ $html = [
   "end" => ["</html>"],
 ];
 
-$devdir = "/pbxdev";
-$livedir = "/pbx";
-
-// Loop over everything to find boot before we loop again to load
-// modules.
-$booted = false;
-foreach ([$devdir, $livedir] as $b) {
-  $boot = "$b/core/php/boot.php";
-  if (file_exists($boot)) {
-    include $boot;
-    $booted = true;
-    break;
+$packages = Packages::getLocalPackages();
+$hookfiles = [];
+foreach ($packages as $name => $dir) {
+  $g = glob("$dir/meta/*webhook.php");
+  foreach ($g as $hookfile) {
+    $id = basename($hookfile);
+    if (!empty($hookfiles[$id])) {
+      print "Found a dupe hookfile $id in $hookfile, previously:\n";
+      print json_encode($hookfiles) . "\n";
+      exit;
+    }
+    $hookfiles[$id] = $hookfile;
+    include $hookfile;
   }
 }
 
-if (!$booted) {
-  print "Could not boot!";
-  exit;
-}
-
-$packages = [];
-$livehooks = glob("$livedir/*/meta/*_webhook.php");
-$devhooks = glob("$devdir/*/meta/*_webhook.php");
-
-// Go through the live hooks
-foreach ($livehooks as $l) {
-  $chunks = explode('_', basename($l));
-  $packages[$chunks[0]] = $l;
-}
-
-// But if there's any in dev, use those instead
-foreach ($devhooks as $l) {
-  $chunks = explode('_', basename($l));
-  $packages[$chunks[0]] = $l;
-}
-
 $includes = [];
-
 foreach ($packages as $p => $f) {
   if (strpos($f, "/origcore/") !== false) {
     continue;
   }
-  include $f;
   $mname = $p . "_mainhook";
   if (function_exists($mname)) {
     $includes[$mname] = $f;

@@ -4,8 +4,8 @@ namespace PhoneBocx;
 
 class Packages
 {
-    private static $basedir = "/var/run/phonebocx";
     private static $pkgurl = "/packages.php";
+    private static ?array $localpkgs = null;
     public static $update = false;
     public static $short = false;
 
@@ -17,15 +17,27 @@ class Packages
         return array_keys($json);
     }
 
-    public static function getLocalPackages()
+    public static function getLocalPackages(): array
     {
-        $retarr = [];
-        $glob = glob("/pbx/*/meta");
-        foreach ($glob as $m) {
-            $pkgname = basename(dirname($m));
-            $retarr[] = $pkgname;
+        if (self::$localpkgs === null) {
+            $retarr = [];
+            // Find anything in /pbx first
+            $glob = glob("/pbx/*/meta");
+            foreach ($glob as $m) {
+                $pkgdir = dirname($m);
+                $pkgname = basename($pkgdir);
+                $retarr[$pkgname] = $pkgdir;
+            }
+            // And then clobber it with anything in /pbxdev
+            $glob = glob("/pbxdev/*/meta");
+            foreach ($glob as $m) {
+                $pkgdir = dirname($m);
+                $pkgname = basename($pkgdir);
+                $retarr[$pkgname] = $pkgdir;
+            }
+            self::$localpkgs = $retarr;
         }
-        return $retarr;
+        return self::$localpkgs;
     }
 
     public static function getPackageReport()
@@ -34,11 +46,11 @@ class Packages
         foreach (self::getRemotePackages() as $p) {
             $retarr[$p] = [
                 "update" => self::doesPkgNeedUpdate($p),
-                "remote" => self::getPkgVer(self::remotePkgInfo($p, true)),
                 "local" => self::getPkgVer(self::localPkgInfo($p, true)),
+                "remote" => self::getPkgVer(self::remotePkgInfo($p, true)),
             ];
         }
-        foreach (self::getLocalPackages() as $p) {
+        foreach (self::getLocalPackages() as $p => $loc) {
             if (empty($retarr[$p])) {
                 $retarr[$p] = [
                     "remote" => "Not available",
@@ -53,11 +65,7 @@ class Packages
     public static function getCurrentJson()
     {
         $refresh = time() - 300;
-        if (!is_dir(self::$basedir)) {
-            mkdir(self::$basedir, 0777, true);
-            chmod(self::$basedir, 0777);
-        }
-        $filename = self::$basedir . "/current.json";
+        $filename = PhoneBocx::getBaseDir() . "/current.json";
         $update = self::$update;
         if (!file_exists($filename)) {
             $update = true;
@@ -76,6 +84,7 @@ class Packages
         if (!file_exists($filename)) {
             throw new \Exception("$filename does not exist");
         }
+        chmod($filename, 0777);
         return file_get_contents($filename);
     }
 
@@ -143,9 +152,10 @@ class Packages
         return join("-", $array);
     }
 
-    public static function localPkgInfo($pkgname, $asarray = false)
+    public static function localPkgInfo($pkg, $asarray = false)
     {
-        $infofile = "/pbx/$pkgname/meta/pkginfo.json";
+        $pkgdir = self::getLocalPackages()[$pkg] ?? "/invalid";
+        $infofile = "$pkgdir/meta/pkginfo.json";
         if (!file_exists($infofile)) {
             return "00000000-0-true";
         }
@@ -165,9 +175,9 @@ class Packages
         return join("-", $array);
     }
 
-    public static function doesPkgNeedUpdate($pkgname)
+    public static function doesPkgNeedUpdate($pkgname, $localdir = "")
     {
-        $localver = self::localPkgInfo($pkgname);
+        $localver = self::localPkgInfo($localdir);
         // If this is unpackaged, no.
         if ($localver == "00000000-0-true") {
             return false;
@@ -227,7 +237,7 @@ class Packages
             }
             return "";
         }
-        foreach (self::getLocalPackages() as $p) {
+        foreach (self::getLocalPackages() as $p => $pdir) {
             if (empty($pkginfo[$p])) {
                 $pkginfo[$p] = ["remote" => false];
             }
@@ -261,7 +271,7 @@ class Packages
             return self::getPkgVer($i['remote']) . " (New)";
         }
         if (!$i['remote']) {
-            return self::getPkgVer($i['local']) . " (Unknown)";
+            return self::getPkgVer($i['local']) . " (Unavail)";
         }
         if (self::doesPkgNeedUpdate($name)) {
             return self::getPkgVer($i['remote']) . " (Update)";

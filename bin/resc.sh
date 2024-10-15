@@ -7,6 +7,7 @@ cd $DIR
 
 include_component install.inc
 include_component distro.inc
+include_component dahdi.inc
 
 set -x
-is_upgrade_avail
+../php/test.php
