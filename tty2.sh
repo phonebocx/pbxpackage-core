@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "This is tty2. Starting a shell"
+echo "Shell on TTY2"
 bash
-echo "Sleeping 1 sec before restart on tty2"
+echo "Restarting..."
 sleep 1

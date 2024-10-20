@@ -54,6 +54,7 @@ remote_update() {
       sleep 3
       return
     fi
+    set -x
     mount_iso
     update_from_mnt
   ) 200>$LOCKFILE
@@ -72,8 +73,11 @@ update_from_mnt() {
   if [ ! "$newver" -o "$newver" == "UNKNOWN" ]; then
     umount $SRC_ROOT
     msgbox "Invalid Version" "\nVersion '$newver' is not a valid $brandname image.\n\nCan not continue."
+    sleep 5
     return
   fi
+  echo "from foldder $SRC_ROOT"
+  sleep 1
   update_from_folder $SRC_ROOT
 }
 
@@ -82,6 +86,7 @@ update_from_folder() {
   newver=$(get_version $SRC_ROOT)
   if [ ! "$newver" -o "$newver" == "UNKNOWN" ]; then
     msgbox "Invalid Version" "\nVersion '$newver' is not a valid $brandname image in $SRC_ROOT.\n\nCan not continue."
+    sleep 1
     grep -q " $SRC_ROOT " /proc/mounts && umount $SRC_ROOT
     return
   fi

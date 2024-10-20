@@ -3,7 +3,7 @@
 
 use PhoneBocx\Commands;
 
-include __DIR__ . "/boot.php";
+include "/usr/local/bin/phpboot.php";
 
 $params = Commands::getCommands();
 

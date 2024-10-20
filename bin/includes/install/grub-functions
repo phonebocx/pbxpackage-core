@@ -107,7 +107,7 @@ generate_grub_cfg() {
     echo "  initrd /boot/$v/initrd.img" >>$OUTFILE
     echo "}" >>$OUTFILE
     echo "menuentry \"$GRUBNAME $v (Debug)\" {" >>$OUTFILE
-    echo "  linux /boot/$v/vmlinuz $(printf "$DEBUG_OPTIONS" $v) nomodeset debug systemd.log_level=info" >>$OUTFILE
+    echo "  linux /boot/$v/vmlinuz $(printf "$DEBUG_OPTIONS" $v) nomodeset" >>$OUTFILE
     echo "  initrd /boot/$v/initrd.img" >>$OUTFILE
     echo "}" >>$OUTFILE
     if [ ! "$madefr" ]; then

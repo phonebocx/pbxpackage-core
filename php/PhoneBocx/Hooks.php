@@ -18,6 +18,11 @@ class Hooks
         $this->phphooks = $phphooks;
     }
 
+    public function getPhpHooksArr(): array
+    {
+        return $this->phphooks;
+    }
+
     /**
      * Triggers a hook. The HookModel object is passed around by reference
      * whenever possible. If there is some reason you can't pass your call
@@ -41,7 +46,7 @@ class Hooks
                 $classname = $tmparr[0];
                 $func = $tmparr[1] ?? $hookname;
                 if (!method_exists($classname, $func)) {
-                    throw new \Exception("Tried to call $classname::$func triggered by $hookname but it does not exist");
+                    throw new \Exception("Tried to call $classname::$func triggered by $hookname but it does not exist. $pkg phphooks.php wrong?");
                 }
                 $retarr[$pkg] = $classname::$func($model);
             }
@@ -50,17 +55,17 @@ class Hooks
         return $retarr;
     }
 
-    public function processAutoloader(string $pkg)
+    public function processAutoloader(string $pkg): string
     {
-        $data = $this->phphooks[$pkg]['hooks'];
+        $data = $this->phphooks[$pkg]['hooks'] ?? [];
         if (empty($data['autoloader'])) {
             // No autoloader
-            return;
+            return "__none__";
         }
         if (is_callable($data['autoloader'])) {
             // Well, you know what you're doing.
             $data['autoloader']();
-            return;
+            return "__callable__";
         }
         $path = $this->phphooks[$pkg]['dir'] . '/php/' . $data['autoloader'];
         if (!file_exists($path)) {
@@ -72,9 +77,11 @@ class Hooks
             unset($this->autoloaders[$path]);
         }
         if (empty($this->autoloaders[$path])) {
-            include $path;
             $this->autoloaders[$path] = true;
+            include $path;
+            return $path;
         }
+        return "__duplicate__";
     }
 
     public function findHookFuncs(string $hookname)

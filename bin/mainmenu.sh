@@ -107,4 +107,6 @@ while :; do
     # We are updating. Don't restart
     exit 5
   fi
+  echo "Fin"
+  sleep 10
 done

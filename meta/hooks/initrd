@@ -25,6 +25,5 @@ fi
 
 scfix=/root/pbx/core/bin/siteconf.sh
 if [ -x $scfix ]; then
-    echo "Running Siteconf fixer $scfix"
     $scfix
 fi

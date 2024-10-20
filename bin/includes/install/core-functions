@@ -17,19 +17,19 @@ create_partitions() {
     exit 1
   fi
 
-  d="/dev/${drive}"
-
   # Figure out what the devices should be
   if [[ "$drive" =~ (cciss|mmc|nvme) ]]; then
-    DEV="/dev/${drive}p"
+    DEV="/dev/${drive}"
+    P=p
   else
     DEV="/dev/$drive"
+    P=""
   fi
 
-  EFI_PARTITION="${DEV}2"
-  RECOVERY_PARTITION="${DEV}3"
-  CONF_PARTITION="${DEV}4"
-  SPOOL_PARTITION="${DEV}5"
+  EFI_PARTITION="${DEV}${P}2"
+  RECOVERY_PARTITION="${DEV}${P}3"
+  CONF_PARTITION="${DEV}${P}4"
+  SPOOL_PARTITION="${DEV}${P}5"
 
   # part1 = BIOS BOOT (backwards compatibility)
   # part2 = EFI (256M)
@@ -38,13 +38,13 @@ create_partitions() {
   # part5 = SPOOL (Whatever is left over)
 
   # Legacy Boot, 2014 sector size is hard-coded in create_if_needed
-  create_if_needed "Legacy Boot" $d 1 legacy
-  create_if_needed "EFI Volume" $d 2 efi "+256M"
+  create_if_needed "Legacy Boot" $DEV 1 legacy
+  create_if_needed "EFI Volume" $DEV 2 efi "+256M"
   # Unfortunately, the previous installer only created this
   # as a 1G partition. This makes migration painful.
-  create_if_needed "Recovery" $d 3 recovery "+2G"
-  create_if_needed "Config" $d 4 conf "+10G"
-  create_if_needed "Spool" $d 5 $SPOOLLABEL "0"
+  create_if_needed "Recovery" $DEV 3 recovery "+2G"
+  create_if_needed "Config" $DEV 4 conf "+10G"
+  create_if_needed "Spool" $DEV 5 $SPOOLLABEL "0"
 
   partprobe $DEV
   udevadm trigger

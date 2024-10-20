@@ -17,6 +17,15 @@ class PortStatus
     return self::parseDahdiScan($dahdiscan);
   }
 
+  public static function getCachedDahdiScan($file = "/var/run/distro/dahdi_scan")
+  {
+    if (!file_exists($file)) {
+      return [];
+    }
+    $fh = fopen($file, "r");
+    return self::parseDahdiScanFromFile($fh);
+  }
+
   public static function parseDahdiScanStdin()
   {
     $ds = self::parseDahdiScanFromFile(STDIN);
@@ -40,10 +49,10 @@ class PortStatus
 
     $sysinfo = PhoneBocx::create()->getSettings();
     foreach ($dahdiscan as $port => $data) {
-      $dahdiscan[$port]['active'] = $sysinfo["port${port}active"] ?? "error";
-      $dahdiscan[$port]['cid'] = $sysinfo["port${port}cid"] ?? "N/A";
-      $dahdiscan[$port]['name'] = $sysinfo["port${port}name"] ?? "N/A";
-      $dahdiscan[$port]['dest'] = $sysinfo["port${port}dest"] ?? "N/A";
+      $dahdiscan[$port]['active'] = $sysinfo["port{$port}active"] ?? "error";
+      $dahdiscan[$port]['cid'] = $sysinfo["port{$port}cid"] ?? "N/A";
+      $dahdiscan[$port]['name'] = $sysinfo["port{$port}name"] ?? "N/A";
+      $dahdiscan[$port]['dest'] = $sysinfo["port{$port}dest"] ?? "N/A";
       $dahdiscan[$port]['signalling'] = "";
       $dahdiscan[$port]['error'] = "";
       $dahdiscan[$port]['ec'] = "";

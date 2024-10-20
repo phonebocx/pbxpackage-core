@@ -1,3 +1,22 @@
 #!/bin/sh
 
-echo "Running Core install hook - this doesn't do anything"
+echo "Running Core install hook"
+
+if [ ! "$PACKAGEDIR" ]; then
+    echo "Packagedir isn't set, how?"
+    PACKAGEDIR=/pbx/core
+fi
+
+# Link meta/bin/* to /usr/local/bin
+for x in $PACKAGEDIR/meta/bin/*; do
+    [ ! -e $x ] && continue
+    dest=/usr/local/bin/$(basename $x)
+    # If this is a symlink to something ELSE, don't link the link.
+    # (Eg, util.php is a prime example)
+    if [ -s $x ]; then
+        src=$(readlink -f $x)
+    else
+        src=$x
+    fi
+    ln -sf $src $dest
+done

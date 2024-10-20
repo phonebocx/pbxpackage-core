@@ -63,6 +63,19 @@ class PhoneBocx
         return true;
     }
 
+    public static function boot(array $autoloaders = []): PhoneBocx
+    {
+        $pb = PhoneBocx::create();
+        if (!empty($autoloaders)) {
+            $hook = $pb->getHookObj();
+            foreach ($autoloaders as $m) {
+                $hook->processAutoloader($m);
+            }
+        }
+        $pb->triggerHook('boot');
+        return $pb;
+    }
+
     // Declare this private so it can't be instantiated accidentally
     private function __construct()
     {
@@ -117,6 +130,11 @@ class PhoneBocx
             }
         }
         $this->h = new Hooks($this, $this->phphooks);
+        return $this->h;
+    }
+
+    public function getHookObj(): Hooks
+    {
         return $this->h;
     }
 

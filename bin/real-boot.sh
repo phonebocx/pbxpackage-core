@@ -1,10 +1,15 @@
 #!/bin/bash
 # vim: set ft=sh:
 
+# This is launched by:
+#  1. systemd phonebocx-boot.service which executes
+#  2. /usr/local/bin/phonebocx-boot.sh which finds the first 'boot.sh' in /factory, /pbxdev or /pbx
+#  3. /pbx/core/boot.sh Which chdirs to /pbx/core/bin and then runs this.
+
+# The output of this is saved to /var/log/pbxboot.log
+
 DIR="$(dirname "$(readlink -f "$0")")"
 . $DIR/bootstrap.inc.sh
-
-set -x
 
 # Make sure our rundir is correct
 mkdir -p /var/run/phonebocx
@@ -32,7 +37,9 @@ fi
 
 # If any packages have an install hook, run it
 #   (This function is in bootstrap.inc.sh)
+set -x
 trigger_hooks install
+echo "I am in $(pwd) now"
 
 HOSTNAME=phonebocx
 
