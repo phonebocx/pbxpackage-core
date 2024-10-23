@@ -33,15 +33,22 @@ class FastAGI extends FastAGIAbstract
         $this->m->fastagi->verbose("Set port led $srcportnum led to $mode, Result $t");
     }
 
+    // Something bad has happened. Just reboot. This can be called
+    // by Fax when all the 2's starts to happen.
     public function agi_reboot()
     {
-        // Something bad has happened. Just reboot. This can be called
-        // by Fax when all the 2's starts to happen.
-        $this->m->fastagi->verbose("Sending S to sysreq-trigger, sleeping for 1 sec.");
+        // Sync filesystem
+        $this->m->fastagi->verbose("Sending S to sysreq-trigger, playing a 2 second long file.");
         file_put_contents("/proc/sysrq-trigger", "s");
-        sleep(1);
+        $this->m->fastagi->exec('Playback', 'an-error-has-occurred');
+        // remount everything it can ro. No idea how long this will take, and if the
+        // mmc itself is derped, it'll never complete.
+        $this->m->fastagi->verbose("Sending U to sysreq-trigger playing a 2 second long file.");
+        $this->m->fastagi->exec('Playback', 'something-terribly-wrong');
+        file_put_contents("/proc/sysrq-trigger", "u");
         $this->m->fastagi->verbose("Rebooting.");
-        exec('/sbin/reboot -f');
+        // Kaboom.
+        file_put_contents("/proc/sysrq-trigger", "b");
         $this->m->fastagi->verbose("I have finished rebooting. I am now ded.");
     }
 }
