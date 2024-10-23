@@ -44,8 +44,8 @@ class FastAGI extends FastAGIAbstract
         // remount everything it can ro. No idea how long this will take, and if the
         // mmc itself is derped, it'll never complete.
         $this->m->fastagi->verbose("Sending U to sysreq-trigger playing a 2 second long file.");
-        $this->m->fastagi->exec('Playback', 'something-terribly-wrong');
         file_put_contents("/proc/sysrq-trigger", "u");
+        $this->m->fastagi->exec('Playback', 'something-terribly-wrong');
         $this->m->fastagi->verbose("Rebooting.");
         // Kaboom.
         file_put_contents("/proc/sysrq-trigger", "b");
