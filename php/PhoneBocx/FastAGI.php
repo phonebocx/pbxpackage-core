@@ -32,4 +32,16 @@ class FastAGI extends FastAGIAbstract
         $t = $l->setPortLed($srcportnum, $mode);
         $this->m->fastagi->verbose("Set port led $srcportnum led to $mode, Result $t");
     }
+
+    public function agi_reboot()
+    {
+        // Something bad has happened. Just reboot. This can be called
+        // by Fax when all the 2's starts to happen.
+        $this->m->fastagi->verbose("Sending S to sysreq-trigger, sleeping for 1 sec.");
+        file_put_contents("/proc/sysrq-trigger", "s");
+        sleep(1);
+        $this->m->fastagi->verbose("Rebooting.");
+        exec('/sbin/reboot -f');
+        $this->m->fastagi->verbose("I have finished rebooting. I am now ded.");
+    }
 }
