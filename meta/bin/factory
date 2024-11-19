@@ -1,0 +1,81 @@
+#!/bin/bash
+
+boot=$(tr  ' ' '\n' < /proc/cmdline | awk -F= '/live-media-path/ { print $2 }')
+if [ ! "$boot" ]; then
+  echo "Can't find version to reset from /proc/cmdline"
+  cat /proc/cmdline
+  sleep 30
+  /sbin/reboot -f
+fi
+
+rootdir=""
+for d in /run/live/medium/boot /run/live/persistence/*/boot; do
+  if [ -d "$d" ]; then
+    rootdir=$(dirname $d)
+    break
+  fi
+done
+
+if [ ! "$rootdir" ]; then
+  echo "Can not find mount for persistant storage"
+  sleep 10
+  /sbin/reboot -f
+fi
+
+if [ ! -e $rootdir/siteconf ]; then
+  echo "No siteconf to erase"
+else
+  mount -o remount,rw /run/live/medium
+  mkdir -p /siteconf
+  fsck -y $rootdir/siteconf
+  mount $rootdir/siteconf /siteconf
+  rm -rf /siteconf/etc /siteconf/rw /siteconf/work
+  if [ -d /siteconf/root ]; then
+    rm -rf /siteconf/root/backup
+    mv /siteconf/root/* /siteconf/root/backup
+  fi
+  umount /siteconf
+  sync
+fi
+
+
+if [ -e /goldlinux/core/resources/functions/common/crypto.sh ]; then
+  . /goldlinux/core/resources/functions/common/crypto.sh
+  rm -f /var/run/crypto.key
+  [ -e /sys/class/dmi/id/product_uuid ] && grep -v "12345678-" /sys/class/dmi/id/product_uuid > /var/run/crypto.key
+  if [ -s /var/run/crypto.key ]; then
+    sdev=$(find_partlabel_dev spool)
+    if [ "$sdev" ]; then
+      mount_cryptovol spool /var/run/crypto.key
+      rm -f /var/run/crypto.key
+    fi
+  fi
+
+  if grep -q " /spool " /proc/mounts; then
+    rm -rf /spool/recovery
+    mkdir /spool/recovery
+    for x in /spool/*; do
+      [ "$(basename $x)" != "recovery" ] && mv $x /spool/recovery
+    done
+    mkdir /spool/queue /spool/data
+  fi
+fi
+
+# Reset our packages back to factory default
+imagedir=$rootdir/$boot
+if [ -d $imagedir/factory ]; then
+  rm -rf $imagedir/packages
+  mkdir $imagedir/packages
+  for f in $imagedir/factory/*; do
+    [ ! -e $f ] && continue
+    ln $f $imagedir/packages/$(basename $f)
+  done
+fi
+
+echo Factory reset complete
+sync
+sleep 2
+/sbin/reboot -f
+
+
+

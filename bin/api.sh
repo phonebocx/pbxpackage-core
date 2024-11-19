@@ -16,6 +16,7 @@ genCurl poll
 echo $CURL -o $tmpfile
 $CURL -o $tmpfile
 cat $tmpfile
+exit
 set -x
 parseResponse $tmpfile
 exit

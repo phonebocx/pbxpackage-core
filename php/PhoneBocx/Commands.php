@@ -12,7 +12,8 @@ class Commands
             "getsysinfo" => ["help" => "Get a sysinfo val", "callable" => Commands::class . "::getSysInfoVal", "print" => true],
             "disturl" => ["help" => "Get the URL to check for the latest ISO", "callable" => Commands::class . "::getDistURL", "print" => true],
             "parsedahdiscan" => ["help" => "Parse the output of get_dahdi_scan", "callable" => PortStatus::class . "::parseDahdiScanStdin", "print" => true],
-            "parseresp" => ["help" => "Parse API Response", "callable" => ParseApiResp::class . "::launch", "print" => true],
+            "parseresp" => ["help" => "Parse API Response", "callable" => ParseApiResp::class . "::launchFromFile", "print" => true],
+            "showlogs" => ["help" => "Show last 30 (or specified) logs", "callable" => Commands::class . "::showLogs", "print" => true],
         ];
         // Important: Pass by ref!
         $params = ["commands" => &$commands];
@@ -43,5 +44,13 @@ class Commands
     public static function getDistURL()
     {
         return CoreInfo::getLatestUrl();
+    }
+
+    public static function showLogs(?int $count = null)
+    {
+        if (!$count) {
+            $count = 30;
+        }
+        return join("\n", Logs::getHumanLogs($count)) . "\n";
     }
 }

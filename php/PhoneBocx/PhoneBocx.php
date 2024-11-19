@@ -172,7 +172,7 @@ class PhoneBocx
         return true;
     }
 
-    public function getPdo()
+    public function getPdo(): \PDO
     {
         if ($this->dbh) {
             return $this->dbh;
