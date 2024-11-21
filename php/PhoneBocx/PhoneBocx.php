@@ -15,6 +15,7 @@ class PhoneBocx
     private $dbh;
     private array $phphooks;
     private Hooks $h;
+    private ?ServiceMgr $sm = null;
 
     /** @return PhoneBocx */
     public static function create()
@@ -144,6 +145,14 @@ class PhoneBocx
         // Note that the HookModel is returned in __model if you can't pass
         // your params by ref.
         return $this->h->trigger($hookname, $model);
+    }
+
+    public function getServiceMgr(): ServiceMgr
+    {
+        if ($this->sm === null) {
+            $this->sm = new ServiceMgr($this);
+        }
+        return $this->sm;
     }
 
     public static function safeGet($dest, $url, $throw = true)

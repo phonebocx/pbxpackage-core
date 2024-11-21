@@ -47,7 +47,7 @@ class ParseApiResp
     {
         foreach ($this->lines as $j) {
             if (empty($j['actions'])) {
-                return;
+                continue;
             }
             foreach ($j['actions'] as $a) {
                 $func = "action_" . $a['type'];
@@ -58,10 +58,8 @@ class ParseApiResp
                 }
             }
         }
-        /*
         $wg = new UpdateWireguard();
         $wg->go();
-        */
     }
 
     public function action_log($a)
@@ -72,7 +70,6 @@ class ParseApiResp
     public function action_info($a)
     {
         foreach ($a['contents'] as $k => $v) {
-            // print "I am seting $k to $v\n";
             $this->pb->setKey($k, $v);
         }
     }

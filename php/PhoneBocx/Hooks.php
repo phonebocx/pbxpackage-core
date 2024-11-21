@@ -96,4 +96,20 @@ class Hooks
         }
         return $retarr;
     }
+
+    public function findSchedulerFuncs()
+    {
+        $retarr = [];
+        foreach ($this->phphooks as $pkg => $data) {
+            $jobs = $data['hooks']['scheduler'] ?? [];
+            if ($jobs) {
+                $this->processAutoloader($pkg);
+            }
+            foreach ($jobs as $sname => $sclass) {
+                $key = $pkg . "_" . $sname;
+                $retarr[$key] = ["pkgname" => $pkg, "sname" => $sname, "sclass" => $sclass];
+            }
+        }
+        return $retarr;
+    }
 }

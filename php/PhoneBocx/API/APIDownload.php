@@ -15,6 +15,11 @@ class APIDownload
     $contents = $a['contents'];
     foreach ($contents as $row) {
       $fn = $row['filename'];
+      $b = basename($fn);
+      if (preg_match('/wg..conf$/', $b)) {
+        // Override wireguard
+        $fn = self::getWireguardLoc($b);
+      }
       $loc = $row['loc'];
       $path = self::getActualPath($loc, $fn);
       if (!$path) {
@@ -38,11 +43,6 @@ class APIDownload
       }
       $bytes = file_put_contents($path, $body);
       Logs::addLogEntry("Saved $bytes bytes at $path", "System");
-      /*
-      if ($bytes != strlen($body)) {
-        // print "I have $bytes written, but it should be " . strlen($body) . "\n";
-      }
-        */
     }
   }
 
@@ -97,5 +97,10 @@ class APIDownload
       return "/efi";
     }
     return null;
+  }
+
+  private static function getWireguardLoc(string $filename)
+  {
+    return "/var/run/wireguard/$filename";
   }
 }

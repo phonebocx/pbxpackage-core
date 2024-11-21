@@ -69,7 +69,7 @@ class API
             'booted' => $this->pbx->getRunningOs(),
             'fax' => 'v3',
         ], "json" => []];
-        foreach (['svceid', 'eid', 'tokuud'] as $d) {
+        foreach (['svceid', 'eid', 'tokuuid'] as $d) {
             $v = $settings[$d] ?? null;
             if ($v) {
                 $retarr['json'][$d] = $v;
