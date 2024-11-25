@@ -1,4 +1,5 @@
 #!/bin/bash
 #
 
-echo "$(date): Window 3 - display other info"
+util --console=win3
+#echo "$(date): Window 3 - display other info"

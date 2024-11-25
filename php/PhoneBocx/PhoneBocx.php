@@ -4,6 +4,7 @@ namespace PhoneBocx;
 
 use GuzzleHttp\Client;
 use PhoneBocx\Models\HookModel;
+use PhoneBocx\Services\ServiceMgr;
 
 /** @package PhoneBocx */
 class PhoneBocx

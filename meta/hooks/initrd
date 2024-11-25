@@ -1,13 +1,39 @@
 #!/bin/sh
 
 echo Running core initrd hook
-# Import any files bundled in core
+# Import any files bundled in core - this can be run by rebuild (eg, devel)
+# or in a normal system reboot, so we want to check /root/pbx and /pbx
 for x in /root/pbx/core/meta/systemd/system/*; do
     [ ! -e $x ] && continue
     service=$(basename $x)
     cp $x /root/etc/systemd/system/$service
     # If it has an Install section, enable it
     grep -q Install $x && /root/usr/bin/systemctl --root=/root enable $service
+done
+
+# This is the complicated one
+for x in /pbx/core/meta/systemd/system/*; do
+    [ ! -e $x ] && continue
+    service=$(basename $x)
+    NEWHASH=$(sha256sum $x | cut -d\  -f1)
+    # If it exists, whats its current hash?
+    DESTFILE=/etc/systemd/system/$service
+    if [ -e "$DESTFILE" ]; then
+        CURRENTHASH=$(sha256sum $DESTFILE | cut -d\  -f1)
+    else
+        CURRENTHASH=newfile
+    fi
+    if [ "$CURRENTHASH" != "$NEWHASH" ]; then
+        echo "Updating $DESTFILE as it has changed"
+        systemctl daemon-reload
+        cp $x $DESTFILE
+        # If it has an Install section, enable it
+        if grep -q Install $x; then
+            /usr/bin/systemctl enable $service
+            /usr/bin/systemctl stop $service
+            /usr/bin/systemctl start $service
+        fi
+    fi
 done
 
 # Now loop through everything ELSE in there, and make sure it's activated

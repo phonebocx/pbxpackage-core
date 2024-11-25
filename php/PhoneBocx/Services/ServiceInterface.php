@@ -1,6 +1,6 @@
 <?php
 
-namespace PhoneBocx\Interfaces;
+namespace PhoneBocx\Services;
 
 use PhoneBocx\PhoneBocx;
 
@@ -19,5 +19,5 @@ interface ServiceInterface
 
     public function isCurrentlyRunning(): bool;
 
-    public function launch(): bool;
+    public function launch(array &$retarr): bool;
 }

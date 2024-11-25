@@ -1,0 +1,18 @@
+# This is the main scheduler, that runs Services as defined in
+# packages. This file originates in core/meta/systemd/system
+
+[Unit]
+Description=PhoneBocx Service Manager
+After=phonebocx-boot.service
+
+[Service]
+Type=exec
+User=root
+ExecStart=/usr/local/bin/util --jobservice=debug
+Restart=always
+RestartSec=5
+RestartMode=direct
+
+[Install]
+WantedBy=multi-user.target
+

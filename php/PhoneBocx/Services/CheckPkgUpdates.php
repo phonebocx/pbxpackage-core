@@ -2,8 +2,6 @@
 
 namespace PhoneBocx\Services;
 
-use PhoneBocx\Interfaces\ServiceInterface;
-
 class CheckPkgUpdates extends ServiceAbstraction implements ServiceInterface
 {
     /**
@@ -25,9 +23,9 @@ class CheckPkgUpdates extends ServiceAbstraction implements ServiceInterface
         return $next;
     }
 
-    public function launch(): bool
+    public function launch(array &$retarr): bool
     {
-        print "PkgUpdates Launched\n";
+        $retarr[] = "PkgUpdates Launched";
         return true;
     }
 }
