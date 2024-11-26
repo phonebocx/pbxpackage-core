@@ -1,8 +1,12 @@
 <?php
 
-use PhoneBocx\API\Sysinfo;
+use PhoneBocx\WebUI\MainPage;
 
-include __DIR__ . '/../php/boot.php';
+if (!file_exists("/usr/local/bin/phpboot.php")) {
+    // Hasn't finished booting
+    exit;
+}
+include "/usr/local/bin/phpboot.php";
 
 $uri = $_SERVER['REQUEST_URI'] ?? "http://example.com/core/api/poll";
 $uriarr = parse_url($uri);
@@ -24,6 +28,6 @@ switch ($cmd) {
 
 function genPoll()
 {
-    $p = new Sysinfo();
-    print $p->respond();
+    $p = new MainPage();
+    return $p->respond();
 }

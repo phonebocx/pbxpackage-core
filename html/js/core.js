@@ -73,6 +73,7 @@ function corePoll() {
 }
 
 function parsePollResp(data) {
+    console.log(data);
     $(".currentver").text(data.runningdist.fullbuild);
     $(".kver").text(data.kernel.kver);
     $(".kbuild").text(data.kernel.kbuild);

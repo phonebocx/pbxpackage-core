@@ -124,7 +124,6 @@ update_from_folder() {
 
   grep -q " $SRC_ROOT " /proc/mounts && umount $SRC_ROOT
   if [ ! "$FATAL" -a ! -e /tmp/devel ]; then
-    echo "Not rebooting"
-    #reboot
+    reboot
   fi
 }
