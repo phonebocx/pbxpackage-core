@@ -39,7 +39,7 @@ remote_update() {
     if [ ! -e $SRC_ROOT ]; then
       tput clear
       echo -e "Downloading $isofile\n\n"
-      curl --progress-bar -L "$url" -o $SRC_ROOT
+      curl --progress-bar -L "$url" -o $SRC_ROOT 2>&1
     fi
     if [ ! -s $SRC_ROOT ]; then
       msgbox "ISO Error!" "\nThe file $SRC_ROOT was corrupt and has been deleted.\n\nPlease try again."

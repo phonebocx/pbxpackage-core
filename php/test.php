@@ -8,6 +8,11 @@ use PhoneBocx\PhoneBocx;
 
 include __DIR__ . "/boot.php";
 
+$p = PhoneBocx::create();
+$s = $p->getServiceMgr();
+var_dump($s->runNextTask());
+exit;
+
 $a = new API();
 var_dump($a->getApiParams());
 exit;
