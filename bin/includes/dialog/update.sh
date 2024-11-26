@@ -54,7 +54,6 @@ remote_update() {
       sleep 3
       return
     fi
-    set -x
     mount_iso
     update_from_mnt
   ) 200>$LOCKFILE
@@ -68,7 +67,6 @@ remote_update() {
 }
 
 update_from_mnt() {
-  . $CDIR/functions/install.inc
   newver=$(get_version $SRC_ROOT)
   if [ ! "$newver" -o "$newver" == "UNKNOWN" ]; then
     umount $SRC_ROOT
@@ -76,8 +74,6 @@ update_from_mnt() {
     sleep 5
     return
   fi
-  echo "from foldder $SRC_ROOT"
-  sleep 1
   update_from_folder $SRC_ROOT
 }
 
@@ -128,6 +124,7 @@ update_from_folder() {
 
   grep -q " $SRC_ROOT " /proc/mounts && umount $SRC_ROOT
   if [ ! "$FATAL" -a ! -e /tmp/devel ]; then
-    reboot
+    echo "Not rebooting"
+    #reboot
   fi
 }

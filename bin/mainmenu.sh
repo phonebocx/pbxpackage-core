@@ -18,6 +18,12 @@ fi
 declare -A assocoptions
 declare -A assocfunctions
 
+LOGDIR=/var/log/menu
+mkdir -p $LOGDIR
+LOGFILE=$LOGDIR/menulog.$$
+find $LOGDIR -type f -empty -delete
+find $LOGDIR -type f -mtime +2 -delete
+
 while :; do
   if ! is_phonebocx_installed; then
     ask_to_install
@@ -107,6 +113,4 @@ while :; do
     # We are updating. Don't restart
     exit 5
   fi
-  echo "Fin"
-  sleep 10
-done
+done 2>>$LOGFILE
