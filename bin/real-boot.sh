@@ -37,14 +37,21 @@ fi
 
 # If any packages have an install hook, run it
 #   (This function is in bootstrap.inc.sh)
-set -x
 trigger_hooks install
-echo "I am in $(pwd) now"
-
-HOSTNAME=phonebocx
 
 include_component boot/hostname.inc
 include_component boot/webresources.inc
 
-set_system_hostname $HOSTNAME
 link_webres
+
+# Now /usr/local/bin/util should exist and be correct
+if [ ! -e /usr/local/bin/util ]; then
+  HOSTNAME=noutil
+else
+  HOSTNAME=$(/usr/local/bin/util --getsysinfo=systemid 2>/dev/null)
+fi
+if [ "$HOSTNAME" ]; then
+  set_system_hostname $HOSTNAME
+else
+  set_system_hostname unconf
+fi

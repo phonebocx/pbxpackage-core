@@ -74,7 +74,7 @@ class Commands
     public static function getSysInfoVal($v)
     {
         $pb = PhoneBocx::create();
-        return json_encode($pb->getKey($v));
+        return $pb->getKey($v);
     }
 
     public static function checkSysInfoDb()
