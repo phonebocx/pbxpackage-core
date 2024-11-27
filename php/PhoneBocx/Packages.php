@@ -4,7 +4,7 @@ namespace PhoneBocx;
 
 class Packages
 {
-    private static $pkgurl = "/packages.php";
+    private static $pkgurl = "/depot/packages.php";
     private static ?array $localpkgs = null;
     public static $update = false;
     public static $short = false;
@@ -14,6 +14,9 @@ class Packages
     public static function getRemotePackages()
     {
         $json = json_decode(self::getCurrentJson(), true);
+        if (!is_array($json)) {
+            return [];
+        }
         return array_keys($json);
     }
 
@@ -62,7 +65,7 @@ class Packages
         return $retarr;
     }
 
-    public static function getCurrentJson()
+    public static function getCurrentJson(bool $refresh = false)
     {
         $refresh = time() - 300;
         $filename = PhoneBocx::getBaseDir() . "/current.json";

@@ -22,7 +22,8 @@ $hookfiles = [];
 foreach ($packages as $name => $dir) {
   $g = glob("$dir/meta/*webhook.php");
   foreach ($g as $hookfile) {
-    $id = basename($hookfile);
+    $f = basename($hookfile);
+    $id = str_replace('_webhook.php', '', $f);
     if (!empty($hookfiles[$id])) {
       print "Found a dupe hookfile $id in $hookfile, previously:\n";
       print json_encode($hookfiles) . "\n";
@@ -34,7 +35,7 @@ foreach ($packages as $name => $dir) {
 }
 
 $includes = [];
-foreach ($packages as $p => $f) {
+foreach ($hookfiles as $p => $f) {
   if (strpos($f, "/origcore/") !== false) {
     continue;
   }
@@ -45,8 +46,7 @@ foreach ($packages as $p => $f) {
   }
   $fname = $p . "_footerhook";
   if (function_exists($fname)) {
-    // Footerhooks have the package array passed to it
-    $fname($html, $packages);
+    $fname($html, $hookfiles);
     $includes[$fname] = $f;
   }
 }

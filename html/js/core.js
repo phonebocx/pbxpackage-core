@@ -2,11 +2,14 @@
 function webuiBoot() {
     console.log("Webui is booting");
     corePoll();
-    clearInterval(window.webuitimer);
-    // window.webuitimer = setInterval(function () { corePoll(); }, 10000);
+    if (window.corepoll) {
+        clearInterval(window.corepoll);
+    }
+    window.corepoll = setInterval(function () { corePoll(); }, 10000);
     window.debug = false;
     $("h3").on("dblclick", function () {
         $(".debugspan").removeClass("d-none");
+        $(".debugbutton").removeClass("d-none");
         window.debug = true;
     });
     if (window.isloggedin) {

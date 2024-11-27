@@ -88,7 +88,7 @@ function core_gentopnav(&$html)
 function core_styles()
 {
   global $bootstrap;
-  $icons = "bootstrap-icons-1.4.1";
+  $icons = "bootstrap-icons-1.11.3";
   $styles = "<link href='/core/$bootstrap/css/bootstrap.min.css' rel='stylesheet'>\n";
   $styles .= "<link href='/core/$icons/bootstrap-icons.css' rel='stylesheet'>";
   $styles .= "<link href='/core/css/core.css' rel='stylesheet'>";
@@ -116,16 +116,27 @@ function core_gensidebar($packages)
 ';
   foreach ($packages as $h => $f) {
     $sfunc = $h . "_sidebarname";
-    $sicon = $h . "_iconname";
     if (function_exists($sfunc)) {
       $name = $sfunc();
+      $sicon = $h . "_iconname";
+      $liclassfunc = $h . "_sidebarclass";
+      $listylefunc = $h . "_sidebarstyle";
+      if (function_exists($liclassfunc)) {
+        $liclass = $liclassfunc();
+        $head .= "          <li class='nav-item $liclass' ";
+      } else {
+        $head .= "          <li class='nav-item' ";
+      }
+      if (function_exists($listylefunc)) {
+        $head .= "style='" . $listylefunc() . "' ";
+      }
+      $head .= "role='presentation'>\n";
       if (function_exists($sicon)) {
         $icon = "<i class='" . $sicon() . "'></i>";
       } else {
-        $icon = "";
+        $icon = "question";
       }
-      $head .= "          <li class='nav-item' role='presentation'>
-            <button class='nav-link' id='$h-pill' data-bs-toggle='pill' data-bs-target='#pillcontent-$h'>
+      $head .= "<button class='nav-link' id='$h-pill' data-bs-toggle='pill' data-bs-target='#pillcontent-$h'>
             $icon $name 
             </button>
           </li>\n";
