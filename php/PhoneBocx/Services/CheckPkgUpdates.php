@@ -8,7 +8,7 @@ class CheckPkgUpdates extends ServiceAbstraction implements ServiceInterface
      * Run this every 15 mins or so
      *
      * @param integer $lastutime
-     * @return void
+     * @return integer
      */
     public static function getNextRunTime(int $lastutime = 0): int
     {

@@ -2,66 +2,94 @@
 
 namespace PhoneBocx;
 
+use PhoneBocx\Models\QueueJobInterface;
+use PhoneBocx\Queue\NoItemAvailableException;
 use PhoneBocx\Queue\Pdo\SqlitePdoQueue;
+use PhoneBocx\Queue\QueueConstructor;
 
-class Queue
+class Queue extends SqlitePdoQueue
 {
-    private static $pdo;
-    private static $cache = [];
+    private static array $queuecache = [];
 
-    public static function getSqliteFile()
+    public static function create(string $name = 'core'): Queue
     {
-        return "/spool/data/jobqueue.sq3";
+        if (empty(self::$queuecache[$name])) {
+            $pdo = QueueConstructor::checkQueueDb($name);
+            self::$queuecache[$name] = new Queue($pdo, $name);
+        }
+        return self::$queuecache[$name];
     }
 
-    public static function getPdo($regen = false): \PDO
+    public function spoolJob($j, int $runafter = 0)
     {
-        $dbfile = self::getSqliteFile();
-
-        if (!is_dir(dirname($dbfile))) {
-            throw new \Exception("$dbfile dir missing, queue unavailable");
+        // Allow runafter to be overridden
+        if ($runafter === 0) {
+            $runafter = $j->runAfter();
         }
-        if ($regen || !self::$pdo) {
-            if (!file_exists($dbfile)) {
-                touch($dbfile);
-                chmod($dbfile, 0777);
-            }
-            self::$pdo = new \PDO("sqlite:" . $dbfile, '', '', [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
-            self::$pdo->exec('PRAGMA journal_mode=WAL');
+        if ($runafter < time()) {
+            $runafter = time() + 5;
         }
-        return self::$pdo;
+        // We make this an array so we can make sure the autoloader for
+        // the job has been run when it's run. Otherwise things break,
+        // as you can't unserialize something that doesn't exist
+        $this->push(["module" => $j->getPackage(), "job" => $j], $runafter);
     }
 
-    public static function getQueue($name = "core", $regen = false): SqlitePdoQueue
+    public function getNextJob(string $byref = ""): ?QueueJobInterface
     {
-        if ($regen || empty(self::$cache[$name])) {
-            $pdo = self::getPdo();
-            if ($regen) {
-                $pdo->query("drop table if exists `$name`");
+        try {
+            if ($byref) {
+                $z = $this->popByRef($byref);
+            } else {
+                $z = $this->pop();
             }
-            try {
-                $pdo->query("select 1 from $name");
-            } catch (\Exception $e) {
-                if (strpos($e->getMessage(), "no such table") !== false) {
-                    self::genTable($pdo, $name);
-                } else {
-                    throw $e;
-                }
+            // We should have an array.
+            if (!is_array($z)) {
+                return null;
             }
-            self::$cache[$name] = new SqlitePdoQueue($pdo, $name);
+            // If this module hasn't been autoloaded, load it
+            PhoneBocx::create()->autoload([$z['module']]);
+            return $z['job'];
+        } catch (NoItemAvailableException $e) {
+            return null;
         }
-        return self::$cache[$name];
     }
 
-    public static function genTable($pdo, $name)
+    public function runNextJob(string $byref = ""): ?QueueJobInterface
     {
-        $src = __DIR__ . "/Queue/res/sqlite/10-table.sql";
-        if (!file_exists($src)) {
-            throw new \Exception("Can't find $src");
+        $j = $this->getNextJob($byref);
+        if (!$j) {
+            return null;
         }
-        foreach (file($src) as $sql) {
-            $query = trim(str_replace('{{table_name}}', $name, $sql));
-            $pdo->query($query);
+
+        // Make sure we can run
+        $current = $j->getCurrentAttempts();
+        if ($current > $j->maxAttempts()) {
+            $j->onFatal("Too many attempts - $current > " . $j->maxAttempts());
+            return null;
         }
+
+        try {
+            $j->incrementAttempts();
+            $res = $j->runJob();
+        } catch (\Exception $e) {
+            $j->onFailure("Exception " . $e->getMessage());
+            return $this->resubmitFailedJob($j);
+        }
+        if (!$res) {
+            $j->onFailure('Returned false');
+            return $this->resubmitFailedJob($j);
+        }
+    }
+
+    public function resubmitFailedJob(QueueJobInterface $j): QueueJobInterface
+    {
+        // Current should aways be positive, as we incremented it
+        // before trying to run it.
+        $backoff = $j->getCurrentAttempts() * $j->getFailureBackoff();
+        $utime = time() + $backoff;
+        print "Resubmitting job in $backoff seconds which is $utime\n";
+        $this->spoolJob($j, $utime);
+        return $j;
     }
 }

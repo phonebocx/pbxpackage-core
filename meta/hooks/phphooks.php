@@ -1,5 +1,7 @@
 <?php
 
+use PhoneBocx\Services\ProcessQueue;
+
 return
 	[
 		"hooks" => [
@@ -7,5 +9,6 @@ return
 		],
 		"scheduler" => [
 			"pkgupdate" => "PhoneBocx\\Services\\CheckPkgUpdates",
+			"queueworker" => ProcessQueue::class,
 		]
 	];

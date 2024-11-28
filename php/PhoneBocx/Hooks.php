@@ -11,6 +11,7 @@ class Hooks
     private PhoneBocx $pb;
     private array $phphooks;
     private array $autoloaders = [];
+    private array $pkgsloaded = [];
 
     public function __construct(PhoneBocx $pb, array $phphooks)
     {
@@ -55,16 +56,23 @@ class Hooks
         return $retarr;
     }
 
+    public function hasPkgBeenLoaded(string $pkg): bool
+    {
+        return (!empty($this->pkgsloaded[$pkg]));
+    }
+
     public function processAutoloader(string $pkg): string
     {
         $data = $this->phphooks[$pkg]['hooks'] ?? [];
         if (empty($data['autoloader'])) {
+            $this->pkgsloaded[$pkg] = '__none__';
             // No autoloader
             return "__none__";
         }
         if (is_callable($data['autoloader'])) {
             // Well, you know what you're doing.
             $data['autoloader']();
+            $this->pkgsloaded[$pkg] = '__callable__';
             return "__callable__";
         }
         $path = $this->phphooks[$pkg]['dir'] . '/php/' . $data['autoloader'];
@@ -78,6 +86,7 @@ class Hooks
         }
         if (empty($this->autoloaders[$path])) {
             $this->autoloaders[$path] = true;
+            $this->pkgsloaded[$pkg] = $path;
             include $path;
             return $path;
         }

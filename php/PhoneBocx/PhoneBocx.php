@@ -78,6 +78,16 @@ class PhoneBocx
         return $pb;
     }
 
+    public function autoload(array $autoloaders = [])
+    {
+        $hook = $this->getHookObj();
+        foreach ($autoloaders as $pkg) {
+            if (!$hook->hasPkgBeenLoaded($pkg)) {
+                $hook->processAutoloader($pkg);
+            }
+        }
+    }
+
     // Declare this private so it can't be instantiated accidentally
     private function __construct()
     {

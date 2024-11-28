@@ -50,18 +50,18 @@ class JobSystemdService
         $this->stderr("Service Starting, will do $loops loops before restarting");
         $mgr = $this->pbx->getServiceMgr();
         while ($loops-- > 1) {
-            $this->stderr("Starting loop, $loops remaining");
+            $this->stdout("Starting loop, $loops remaining");
             $alltasks = $mgr->getAllScheduledTasks();
             if (!$alltasks) {
-                $this->stdout("Nothing in alltasks found, sleeping for 5 seconds and trying again");
-                sleep(5);
+                $this->stdout("Nothing in alltasks found, sleeping for 15 seconds and trying again");
+                sleep(15);
                 continue;
             }
             // Check that we have a next task
             $task = $mgr->getNextTask($alltasks);
             if (!$task) {
-                $this->stdout("Nothing returned by getNextTask, sleeping for 5 seconds and trying again");
-                sleep(5);
+                $this->stdout("Nothing returned by getNextTask, sleeping for 15 seconds and trying again");
+                sleep(15);
                 continue;
             }
             // Now we wait for the task to be ready. This is broken up into
