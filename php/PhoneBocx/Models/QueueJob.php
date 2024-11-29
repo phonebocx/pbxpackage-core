@@ -4,20 +4,37 @@ namespace PhoneBocx\Models;
 
 abstract class QueueJob implements QueueJobInterface
 {
+    /** Set by linkWith, for use by runJob if needed */
     protected string $serobj = "";
     protected int $currentattempts = 0;
+    protected ?int $forcedrunafter = null;
 
     abstract public function runAfter(): int;
 
-    abstract public function getRef(): string;
+    public function forceRunAfter(?int $utime = null)
+    {
+        $this->forcedrunafter = $utime;
+    }
+
+    public function getRef(): string
+    {
+        return "";
+    }
 
     abstract public function getPackage(): string;
 
-    abstract public function getHandler(): string;
-
-    public function serializeObj($obj)
+    public function linkWith($obj): self
     {
         $this->serobj = serialize($obj);
+        return $this;
+    }
+
+    public function getLink()
+    {
+        if ($this->serobj) {
+            return unserialize($this->serobj);
+        }
+        return null;
     }
 
     public function getFailureBackoff(): int

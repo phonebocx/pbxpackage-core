@@ -20,12 +20,11 @@ class Queue extends SqlitePdoQueue
         return self::$queuecache[$name];
     }
 
-    public function spoolJob($j, int $runafter = 0)
+    public function spoolJob($j)
     {
-        // Allow runafter to be overridden
-        if ($runafter === 0) {
-            $runafter = $j->runAfter();
-        }
+        // Note that j->forceRunAfter is set when the job is resubmitted
+        // after failure.
+        $runafter = $j->runAfter();
         if ($runafter < time()) {
             $runafter = time() + 5;
         }
@@ -76,10 +75,14 @@ class Queue extends SqlitePdoQueue
             $j->onFailure("Exception " . $e->getMessage());
             return $this->resubmitFailedJob($j);
         }
-        if (!$res) {
+        if ($res) {
+            $j->onSuccess();
+            return $j;
+        } else {
             $j->onFailure('Returned false');
             return $this->resubmitFailedJob($j);
         }
+        // Unreachable
     }
 
     public function resubmitFailedJob(QueueJobInterface $j): QueueJobInterface
@@ -87,9 +90,15 @@ class Queue extends SqlitePdoQueue
         // Current should aways be positive, as we incremented it
         // before trying to run it.
         $backoff = $j->getCurrentAttempts() * $j->getFailureBackoff();
-        $utime = time() + $backoff;
-        print "Resubmitting job in $backoff seconds which is $utime\n";
-        $this->spoolJob($j, $utime);
+
+        // Make sure it's not negative, and at least 5 seconds.
+        $utime = time() + max(5, $backoff);
+
+        // Tell the job this is when it SHOULD run.
+        $j->forceRunAfter($utime);
+
+        // And resubmit it.
+        $this->spoolJob($j);
         return $j;
     }
 }

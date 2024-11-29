@@ -169,7 +169,7 @@ class CoreInfo
 
     public static function getQueueCount()
     {
-        $queue = Queue::getQueue();
+        $queue = Queue::create();
         return $queue->count();
     }
 }
