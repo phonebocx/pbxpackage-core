@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# This should be run by cron every 15 mins
+cd "$(dirname "$(readlink -f "$0")")"
+if [ ! -e "./bootstrap.inc.sh" ]; then
+    echo "Can not find bootstrap.inc in $(pwd), major system error."
+    exit 1
+fi
+
+. ./bootstrap.inc.sh
+
+include_component install/common-functions
+
+CONF_PARTITION=$(find_conf_partition)
+if [ ! "$CONF_PARTITION" ]; then
+    echo Crazy problem, no conf partition found!
+    exit 1
+fi
+
+# Let's just assume it's at /run/live/medium until we are proven wrong
+MOUNTPOINT=/run/live/medium
+
+capacity=$(df -P $CONF_PARTITION | awk '/%/ { print $(NF-1)}' | tail -1 | tr -d '%')
+
+if [ ! "$capacity" ]; then
+    echo "Can not find capacity of $CONF_PARTITION"
+    df -P $CONF_PARTITION
+    sleep 5
+    exit 1
+fi
+
+if [ "$capacity" -lt 70 ]; then
+    echo "Conf partition less than 70% full, nothing needs to happen"
+    exit
+fi
+
+echo "Conf partition too full at $capacity"
+spoolmounted=$(grep " /spool" /proc/mounts)
+if [ ! "$spoolmounted" ]; then
+    echo "Can not clean anything up, /spool is not mounted"
+    exit 1
+fi
+
+# Clean up any old isos in /spool - This is usually done by install-functions,
+# but only prunes images that are older than 14 days. If we are low on disk space,
+# we need to be more urgent.
+find /spool -type f -name '*.iso' -mtime +5 -delete
+
+# Remount the conf partition read write so we can clean it up
+mount -o remount,rw $MOUNTPOINT
+
+# Check 1 - is oldsiteconf still there?
+if [ -e "$MOUNTPOINT/oldsiteconf" ]; then
+    # If the gzipped file is older than a few days, the gzip failed for some reason
+    # without triggering the cleanup, so nuke it and start again.
+    find /spool -type f -name 'oldsiteconf.gz' -mtime +2 -ls
+    destfile=/spool/oldsiteconf.gz
+    if [ ! -e "$destfile" ]; then
+        echo "$(date): Starting compression of oldsiteconf onto spool"
+        gzip -9 <$MOUNTPOINT/oldsiteconf >$destfile
+        STATUS=$?
+        if [ "$STATUS" -ne "0" ]; then
+            echo "$(date): Failure compressing into $destfile - Removing"
+            rm -f $destfile
+        else
+            echo "$(date): Compression finished. Removing source"
+            rm -f $MOUNTPOINT/oldsiteconf
+            # We've just removed 1G, we can wait for the next run to see
+            # it anything else needs to be cleaned up.
+            echo "Siteconf cleanup complete, not continuing"
+            exit
+        fi
+    else
+        echo "Unexpected error - $destfile exists but it shouldn't."
+    fi
+fi

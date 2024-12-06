@@ -1,31 +1,30 @@
 #!/bin/bash
 
-remote_update() {
+auto_remote_update() {
   include_component fattr.inc
+  include_component spinner.inc
+  include_component install/grub-functions
+  # include_component install/iso-functions
+  include_component install/install-functions
+  include_component install/partition-tools
+  include_component install/siteconf-functions
 
   if ! grep -q " /spool " /proc/mounts; then
-    msgbox "No spool!" "\nThere is no local spool available.\n\nA spool directory is required to download the update ISO.\n\nPlease install $brandname, which will create the local storage, and then upgrade."
-    return
+    echo -e "There is no local spool available.\n\nA spool directory is required to download the update ISO.\n\nPlease install $brandname, which will create the local storage, and then upgrade."
+    return 1
   fi
   if grep -q " $ISO_MOUNT " /proc/mounts; then
-    msgbox "Mount Error" "\nThe mount point $ISO_MOUNT is already in use by something.\n\nPlease unmount whatever is there, and retry.\n"
-    return
+    echo -e "The mount point $ISO_MOUNT is already in use by something.\n\nPlease unmount whatever is there, and retry.\n"
+    return 1
   fi
 
-  iso=$(get_download_url force)
-
-  if [ -e /tmp/extradevel ]; then
-    get_string "Update Source" "\nPlease enter the URL to pull an update from\n\nThis probably will not be configurable.\n\n" "$iso"
-    url=$(<$dialog_outfile)
-    if [ ! "$url" ]; then
-      return
-    fi
-  else
-    url=$iso
-  fi
+  url=$(get_download_url force)
   isofile=$(basename $url | tr -c -d '[:graph:]' | tr -d ';&*')
   SRC_ROOT="/spool/$isofile"
   sha=$(get_download_sha)
+
+  # This is used to skip over some checks in the standard tools
+  AUTOUPDATE=true
 
   # This lock is shared by everything that does updates.
   LOCKFILE=/tmp/poll.lock
@@ -37,18 +36,16 @@ remote_update() {
   # We only continue if nothing ELSE is doing updates.
   (
     flock -n -e 200 || exit 56
-
     if [ ! -e $SRC_ROOT ]; then
-      tput clear
       echo -e "Downloading $isofile\n\n"
       curl --progress-bar -L "$url" -o $SRC_ROOT 2>&1
     fi
     if [ ! -s $SRC_ROOT ]; then
-      msgbox "ISO Error!" "\nThe file $SRC_ROOT was corrupt and has been deleted.\n\nPlease try again."
+      echo -e "\nThe file $SRC_ROOT was corrupt and has been deleted.\n\nPlease try again."
       rm -f $SRC_ROOT
-      return
+      return 1
     fi
-    infobox "Validating ISO" "\n$isofile has been downloaded.\n\nThe size of the downloaded file is $(stat -c %s $SRC_ROOT | numfmt --to=iec).\n\nChecking sha256, please wait."
+    echo -e "\n$isofile has been downloaded.\n\nThe size of the downloaded file is $(stat -c %s $SRC_ROOT | numfmt --to=iec).\n\nChecking sha256, please wait."
     currentsha=$(get_attribute $SRC_ROOT sha256)
     # Update it if it's missing
     if [ ! "$currentsha" ]; then
@@ -57,14 +54,15 @@ remote_update() {
     fi
     if [ "$currentsha" != "$sha" ]; then
       rm -f $SRC_ROOT
-      infobox "Checksum Error!" "\nThe file $isofile had the checksum $currentsha, it should have been $sha.\n\nThe file has been deleted."
+      echo -e "\nThe file $isofile had the checksum $currentsha, it should have been $sha.\n\nThe file has been deleted."
       sleep 3
-      return
+      return 1
     fi
     mount_iso
-    update_from_mnt
+    auto_update_from_mnt
   ) 200>$LOCKFILE
 
+  exit 9
   ERR=$?
   if [ "$ERR" == "56" ]; then
     infobox "Unable to Lock" "\nAn update is currently being performed.\n\nPlease try again later."
@@ -73,22 +71,22 @@ remote_update() {
   fi
 }
 
-update_from_mnt() {
+auto_update_from_mnt() {
   newver=$(get_version $SRC_ROOT)
   if [ ! "$newver" -o "$newver" == "UNKNOWN" ]; then
     umount $SRC_ROOT
-    msgbox "Invalid Version" "\nVersion '$newver' is not a valid $brandname image.\n\nCan not continue."
+    echo -e "Version '$newver' is not a valid $brandname image.\n\nCan not continue."
     sleep 5
     return
   fi
-  update_from_folder $SRC_ROOT
+  auto_update_from_folder $SRC_ROOT
 }
 
-update_from_folder() {
+auto_update_from_folder() {
   SRC_ROOT=$1
   newver=$(get_version $SRC_ROOT)
   if [ ! "$newver" -o "$newver" == "UNKNOWN" ]; then
-    msgbox "Invalid Version" "\nVersion '$newver' is not a valid $brandname image in $SRC_ROOT.\n\nCan not continue."
+    echo -e "\nVersion '$newver' is not a valid $brandname image in $SRC_ROOT.\n\nCan not continue."
     sleep 1
     grep -q " $SRC_ROOT " /proc/mounts && umount $SRC_ROOT
     return
@@ -105,19 +103,16 @@ update_from_folder() {
     exit 1
   fi
 
-  if [ -e /tmp/devel ]; then
-    get_string "Updating $DRIVE" "\nPlease enter the name for this image.\n\nYou can not overwrite the current running image, so you may need to chose a new name.\n" "$newver"
-    name=$(cat $dialog_outfile | tr -c -d '[:graph:]' | tr -d ';&*')
-    if [ ! "$name" ]; then
-      grep -q " $SRC_ROOT " /proc/mounts && umount $SRC_ROOT
-      return
-    fi
-    if [ "$name" != "$newver" ]; then
-      FORCEDNAME=$name
-    fi
+  running=$(get_running_version)
+  if [ "$running" == "$newver" ]; then
+    FORCEDNAME=$newver"a"
   fi
-  tput clear
+
   do_install
+
+  # Remove old images befre regenerating grub
+  cleanup_old_installs
+
   # This should always exist, but maybe it was deleted or something?
   if [ -e "$WR_CONF/boot/grub/grub.cfg" ]; then
     generate_grub_cfg "$WR_CONF/boot/grub"
@@ -131,6 +126,6 @@ update_from_folder() {
 
   grep -q " $SRC_ROOT " /proc/mounts && umount $SRC_ROOT
   if [ ! "$FATAL" -a ! -e /tmp/devel ]; then
-    reboot
+    echo 'I would reboot'
   fi
 }

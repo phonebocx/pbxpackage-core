@@ -2,6 +2,8 @@
 
 namespace PhoneBocx\Services;
 
+use PhoneBocx\Log;
+use PhoneBocx\Logs;
 use PhoneBocx\PhoneBocx;
 
 class JobSystemdService
@@ -47,6 +49,7 @@ class JobSystemdService
     public function go()
     {
         $loops = 50;
+        Logs::addLogEntry("Systemd Service Started, will run $loops times before restarting", 'Service');
         $this->stderr("Service Starting, will do $loops loops before restarting");
         $mgr = $this->pbx->getServiceMgr();
         while ($loops-- > 1) {

@@ -11,6 +11,12 @@ class Packages
 
     public static $quiet = true;
 
+    public static function getFullPkgUrl(): string
+    {
+        $build = PhoneBocx::create()->getKey('os_build', 'unknown');
+        return FileLocations::getBaseUrl() . self::$pkgurl . "?os_build=$build";
+    }
+
     public static function getRemotePackages()
     {
         $json = json_decode(self::getCurrentJson(), true);
@@ -118,12 +124,13 @@ class Packages
             return false;
         }
         try {
-            $url = FileLocations::getBaseUrl() . self::$pkgurl . "?os_build=$build";
+            $url = self::getFullPkgUrl();
             PhoneBocx::safeGet($dest, $url, true);
         } catch (\Exception $e) {
             fclose($lockfh);
             if (!self::$quiet) {
                 print "updateFromApi Error: " . $e->getMessage() . "\n";
+                print "Tried $url\n";
                 return $e->getMessage();
             }
             return false;
@@ -280,5 +287,34 @@ class Packages
             return self::getPkgVer($i['remote']) . " (Update)";
         }
         return self::getPkgVer($i['remote']);
+    }
+
+    public static function downloadRemotePackage(string $name, string $destdir, bool $force = false)
+    {
+        $src = "http://repo.phonebo.cx/depot";
+        $pkgfile = "$name.squashfs";
+        if (!is_dir($destdir)) {
+            mkdir($destdir, 0777, true);
+        }
+        $basedest = "$destdir/new.$pkgfile";
+        $files = [
+            $basedest => "$src/$pkgfile",
+            "$basedest.meta" => "$src/$pkgfile.meta",
+            "$basedest.sha256" => "$src/$pkgfile.sha256",
+        ];
+        $retarr = [];
+        foreach ($files as $d => $f) {
+            $retarr[$d] = ["src" => $f];
+            if ($force) {
+                @unlink($d);
+            }
+            if (!file_exists($d)) {
+                $retarr[$d]['exists'] = false;
+                $retarr[$d]['safeget'] = PhoneBocx::safeGet($d, $f);
+            } else {
+                $retarr[$d]['exists'] = true;
+            }
+        }
+        return $retarr;
     }
 }

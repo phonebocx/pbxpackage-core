@@ -9,6 +9,13 @@ for x in /root/pbx/core/meta/systemd/system/*; do
     cp $x /root/etc/systemd/system/$service
     # If it has an Install section, enable it
     grep -q Install $x && /root/usr/bin/systemctl --root=/root enable $service
+    # If it has a Conflicts, disable them
+    C=$(grep Conflicts $x | cut -d= -f2)
+    if [ "$C" ]; then
+        echo "Conflict detected in $x for $C"
+        /root/usr/bin/systemctl --root=/root mask $C
+    fi
+
 done
 
 # This is the complicated one
@@ -25,13 +32,18 @@ for x in /pbx/core/meta/systemd/system/*; do
     fi
     if [ "$CURRENTHASH" != "$NEWHASH" ]; then
         echo "Updating $DESTFILE as it has changed"
-        systemctl daemon-reload
         cp $x $DESTFILE
+        systemctl daemon-reload
         # If it has an Install section, enable it
         if grep -q Install $x; then
             /usr/bin/systemctl enable $service
             /usr/bin/systemctl stop $service
             /usr/bin/systemctl start $service
+        fi
+        # If it has Conflicts, disable them
+        C=$(grep Conflicts $x | cut -d= -f2)
+        if [ "$C" ]; then
+            /usr/bin/systemctl mask $C
         fi
     fi
 done
@@ -47,6 +59,9 @@ done
 # kernel params, merge them across
 if [ -d /root/pbx/core/filesystem ]; then
     grep -q skipfs /proc/cmdline && rsync -av /root/pbx/core/filesystem/ /root/
+fi
+if [ -d /pbx/core/filesystem ]; then
+    grep -q skipfs /proc/cmdline && rsync -av /pbx/core/filesystem/ /
 fi
 
 scfix=/root/pbx/core/bin/siteconf.sh

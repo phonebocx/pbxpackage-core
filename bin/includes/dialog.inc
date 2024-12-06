@@ -5,7 +5,7 @@ include_component distro.inc
 include_component dialog/askinstall.sh
 include_component dialog/persistence.sh
 include_component dialog/update.sh
-include_component dialog/packageupdate.sh
+include_component automation.inc
 # This is for Clearly IP hardware, with a dedicated Run-mode LED
 include_component i2c.inc
 

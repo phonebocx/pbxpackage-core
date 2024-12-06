@@ -21,20 +21,19 @@ get_remote_packages() {
 
 get_local_pkg_info() {
   local pkg=$1
-  $PHPBIN/util.php --localpkginfo $p
+  $PHPBIN/util.php --localpkginfo $pkg
 }
 
 get_remote_pkg_info() {
-  local p=$1
-  $PHPBIN/util.php --remotepkginfo $p
+  local pkg=$1
+  $PHPBIN/util.php --remotepkginfo $pkg
   # get_current_json | jq -j ".$p.commit,\"-\",.$p.utime,\"-\",.$p.modified"
 }
 
-# Returning 1 is false, 0 is true
+# If this returns anything, the answer is yes.
 pkg_needs_update() {
   local p=$1
-  # Exit value is returned
-  $PHPBIN/util.php --updateavail $p
+  $PHPBIN/util.php --pkgneedsupdate $p
 }
 
 get_local_pkg_vers() {

@@ -37,7 +37,7 @@ while :; do
   )
 
   assocfunctions=(
-    [01check]="package_updates"
+    [01check]="update_packages"
     [10update]="remote_update"
     [12grub]="force_reinstall_grub"
     [15persist]="update_persistence"
@@ -80,8 +80,6 @@ while :; do
   if [ "${assocfunctions[${choice}]}" ]; then
     callfunc=${assocfunctions[${choice}]}
     $callfunc
-    #echo "$callfunc finished"
-    #sleep 5
   else
     case ${choice} in
     "11devel")

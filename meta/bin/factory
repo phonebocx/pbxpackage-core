@@ -1,6 +1,6 @@
 #!/bin/bash
 
-boot=$(tr  ' ' '\n' < /proc/cmdline | awk -F= '/live-media-path/ { print $2 }')
+boot=$(tr ' ' '\n' </proc/cmdline | awk -F= '/live-media-path/ { print $2 }')
 if [ ! "$boot" ]; then
   echo "Can't find version to reset from /proc/cmdline"
   cat /proc/cmdline
@@ -22,6 +22,10 @@ if [ ! "$rootdir" ]; then
   /sbin/reboot -f
 fi
 
+echo "This probably will not work at this point"
+sleep 30
+exit 99
+
 if [ ! -e $rootdir/siteconf ]; then
   echo "No siteconf to erase"
 else
@@ -36,29 +40,6 @@ else
   fi
   umount /siteconf
   sync
-fi
-
-
-if [ -e /goldlinux/core/resources/functions/common/crypto.sh ]; then
-  . /goldlinux/core/resources/functions/common/crypto.sh
-  rm -f /var/run/crypto.key
-  [ -e /sys/class/dmi/id/product_uuid ] && grep -v "12345678-" /sys/class/dmi/id/product_uuid > /var/run/crypto.key
-  if [ -s /var/run/crypto.key ]; then
-    sdev=$(find_partlabel_dev spool)
-    if [ "$sdev" ]; then
-      mount_cryptovol spool /var/run/crypto.key
-      rm -f /var/run/crypto.key
-    fi
-  fi
-
-  if grep -q " /spool " /proc/mounts; then
-    rm -rf /spool/recovery
-    mkdir /spool/recovery
-    for x in /spool/*; do
-      [ "$(basename $x)" != "recovery" ] && mv $x /spool/recovery
-    done
-    mkdir /spool/queue /spool/data
-  fi
 fi
 
 # Reset our packages back to factory default
@@ -76,6 +57,3 @@ echo Factory reset complete
 sync
 sleep 2
 /sbin/reboot -f
-
-
-

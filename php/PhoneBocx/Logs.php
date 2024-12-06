@@ -24,12 +24,12 @@ class Logs
         }
         return $res;
     }
-    public static function getHumanLogs(int $limit = 20): array
+    public static function getHumanLogs(int $limit = 20, string $splitaftertime = ": ", int $maxmsglen = 80): array
     {
         $retarr = [];
         $logs = self::getLogs($limit);
         foreach ($logs as $row) {
-            $retarr[] = $row['t'] . ": (" . $row['type'] . ") " . $row['message'];
+            $retarr[] = $row['t'] . $splitaftertime . "(" . $row['type'] . ") " . substr($row['message'], 0, $maxmsglen);
         }
         return $retarr;
     }

@@ -1,0 +1,14 @@
+[Unit]
+Description=Package Updater
+DefaultDependencies=no
+Conflicts=getty@tty3.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/pkgupdate
+StandardInput=tty
+StandardOutput=tty
+TTYPath=/dev/tty3
+
+
+

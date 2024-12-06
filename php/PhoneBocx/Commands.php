@@ -11,22 +11,27 @@ class Commands
         $commands = [
             "checksysinfo" => [
                 "help" => "Checks the sysinfo table.",
-                "callable" => Commands::class . "::checkSysInfoDb",
+                "callable" => self::class . "::checkSysInfoDb",
                 "priority" => true
             ],
             "pkgdisplay" => [
                 "help" => "Display currently installed packages",
-                "callable" => Commands::class . "::showLocalPackages",
+                "callable" => self::class . "::showLocalPackages",
                 "print" => true
             ],
             "getsysinfo" => [
                 "help" => "Get a sysinfo val",
-                "callable" => Commands::class . "::getSysInfoVal",
+                "callable" => self::class . "::getSysInfoVal",
                 "print" => true
             ],
             "disturl" => [
                 "help" => "Get the URL to check for the latest ISO",
-                "callable" => Commands::class . "::getDistURL",
+                "callable" => self::class . "::getDistURL",
+                "print" => true
+            ],
+            "pkgurl" => [
+                "help" => "Get the URL to check for package updates",
+                "callable" => self::class . "::getPkgURL",
                 "print" => true
             ],
             "parsedahdiscan" => [
@@ -42,7 +47,7 @@ class Commands
             "showlogs" => [
                 "help" => "Show last 30 (or specified) logs",
                 "example" => "--showlogs=10 will show the last 10 logs",
-                "callable" => Commands::class . "::showLogs",
+                "callable" => self::class . "::showLogs",
                 "print" => true
             ],
             "console" => [
@@ -58,6 +63,36 @@ class Commands
                 "print" => true,
                 "hide" => true
             ],
+            "pkgjson" => [
+                "help" => "Returns the current package.json",
+                "callable" => self::class . "::pkgJson",
+                "print" => true,
+            ],
+            "remotepkgs" => [
+                "help" => "Returns a list of remote packages",
+                "callable" => self::class . "::remotePkgList",
+                "print" => true,
+            ],
+            "pkgneedsupdate" => [
+                "help" => "Does this package need an update",
+                "callable" => self::class . "::checkPkgUpdate",
+                "print" => true,
+            ],
+            "pkgdownload" => [
+                "help" => "Does this package need an update",
+                "callable" => self::class . "::downloadPkg",
+                "print" => true,
+                "extraparams" => [
+                    "destdir" => "Destination Directory (Mandatory)",
+                    "forcedownload" => "Always download, even if they are already here",
+                    "pkgoutput" => "Optional style of output",
+                ],
+            ],
+            "checkdownload" => [
+                "help" => "Check the downloaded package is valid",
+                "callable" => self::class . "::checkPkgHashes",
+                "print" => true,
+            ],
         ];
         // Important: Pass by ref!
         $params = ["commands" => &$commands];
@@ -65,8 +100,13 @@ class Commands
         return $commands;
     }
 
-    public static function showLocalPackages()
+    public static function showLocalPackages($param = "")
     {
+        if ($param) {
+            $refresh = true;
+        } else {
+            $refresh = false;
+        }
         Packages::$quiet = false;
         return Packages::getPkgDisplay();
     }
@@ -90,11 +130,70 @@ class Commands
         return CoreInfo::getLatestUrl();
     }
 
+    public static function getPkgURL()
+    {
+        return Packages::getFullPkgUrl();
+    }
+
     public static function showLogs(?int $count = null)
     {
         if (!$count) {
             $count = 30;
         }
         return join("\n", Logs::getHumanLogs($count)) . "\n";
+    }
+
+    public static function pkgJson($param = "")
+    {
+        if ($param) {
+            $refresh = true;
+        } else {
+            $refresh = false;
+        }
+        return Packages::getCurrentJson($refresh);
+    }
+
+    public static function remotePkgList()
+    {
+        return join(" ", Packages::getRemotePackages());
+    }
+
+    public static function checkPkgUpdate(string $pkgname = "")
+    {
+        if (Packages::doesPkgNeedUpdate($pkgname)) {
+            return "true";
+        }
+        return "";
+    }
+
+    public static function downloadPkg(array $params)
+    {
+        $force = array_key_exists('forcedownload', $params);
+        $res = Packages::downloadRemotePackage($params['pkgdownload'], $params['destdir'], $force);
+        $outputstyle = $params['pkgoutput'] ?? 'json';
+        switch ($outputstyle) {
+            case 'filenames':
+                return join("\n", array_keys($res)) . "\n";
+            case 'json':
+                return json_encode($res);
+        }
+        throw new \Exception("Unknown outputstyle $outputstyle");
+    }
+
+    public static function checkPkgHashes(string $pkgbase)
+    {
+        if (!file_exists($pkgbase)) {
+            return "Error: $pkgbase missing";
+        }
+        $hashfile = $pkgbase . ".sha256";
+        if (!file_exists($hashfile)) {
+            return "Error: $hashfile missing";
+        }
+        $shouldbe = file_get_contents($hashfile);
+        $localhash = hash_file('sha256', $pkgbase);
+        if ($shouldbe !== $localhash) {
+            return "Hash mismatch: " . json_encode([$shouldbe, $localhash]);
+        }
+        return "";
     }
 }

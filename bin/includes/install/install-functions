@@ -1,16 +1,19 @@
 #! /bin/bash
 
 do_install() {
-  echo "** Checking partitions on /dev/$DRIVE"
-  create_partitions $DRIVE
-  echo "** Partitions on /dev/$DRIVE OK"
+  if [ ! "$AUTOUPDATE" ]; then
+    echo "** Checking partitions on /dev/$DRIVE"
+    create_partitions $DRIVE
+    echo "** Partitions on /dev/$DRIVE OK"
+  fi
 
   if [ ! "$EFI_PARTITION" ]; then
     EFI_PARTITION=$(get_efi_partition)
   fi
 
   if [[ -b "$SRC_ROOT" || (-f "$SRC_ROOT" && "$SRC_ROOT" == *".iso") ]]; then
-    # It could be a block device OR a file. We don't care
+    # It could be a block device OR a file. We don't care. If we're from an
+    # automatic update, this is already mounted.
     UNMOUNTISO=$SRC_ROOT
     mount_iso
     # This is unmounted in grub-functions::install_grub()
@@ -224,8 +227,10 @@ is_phonebocx_installed() {
 }
 
 cleanup_old_installs() {
+  # ISOs are cleaned up more agressively in hdcleanup, which is triggered
+  # when CONF_PARTITION is more than 70% full.
   if [ -d /spool ]; then
-    find /spool -maxdepth 1 -name *.iso -mtime +14 -exec rm -rf {} \;
+    find /spool -maxdepth 1 -name *.iso -mtime +14 -delete
   fi
 
   if [ ! -d "$WR_CONF/boot" ]; then
@@ -234,7 +239,7 @@ cleanup_old_installs() {
     return
   fi
   # Find all phonebocx installs, and remove all but the latest 5.
-  DIRS=$(find $WR_CONF/boot -name distro.timestamp -printf "%T@ %h\n" | sort | head -n-5 | cut -d\  -f2)
+  DIRS=$(find $WR_CONF/boot -name *.timestamp -printf "%T@ %h\n" | sort | head -n-5 | cut -d\  -f2)
   if [ "$DIRS" ]; then
     rm -rf $DIRS
   fi

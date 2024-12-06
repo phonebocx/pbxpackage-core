@@ -37,12 +37,23 @@ class APIDownload
         $r = $c->get($row['url']);
         $body = (string) $r->getBody();
       }
+      $bodyhash = hash('sha256', $body);
       $basedir = dirname($path);
       if (!is_dir($basedir)) {
         mkdir($basedir, 0777, true);
       }
+      if (file_exists($path)) {
+        $currenthash = hash('sha256', file_get_contents($path));
+      } else {
+        $currenthash = '_missing_';
+      }
+      if ($bodyhash == $currenthash) {
+        // No change
+        return;
+      }
       $bytes = file_put_contents($path, $body);
-      Logs::addLogEntry("Saved $bytes bytes at $path", "System");
+      Logs::addLogEntry("Updated $path, wrote $bytes bytes", "System");
+      Logs::addLogEntry("$path hash was '$currenthash', is now '$bodyhash'", "System");
     }
   }
 

@@ -38,7 +38,7 @@ abstract class FastAGIAbstract
             $this->m->fastagi->verbose("I am calling $funcname");
             return $this->$funcname();
         }
-        $this->m->fastagi->verbose("I wanted to call $funcname but it did not exist");
+        $this->m->fastagi->verbose("I wanted to call $funcname in " . get_class($this) . " but it did not exist");
         return $funcname;
     }
 }
