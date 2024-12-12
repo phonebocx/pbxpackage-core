@@ -6,10 +6,12 @@ function update_os() {
         echo "Updates not available when running live"
         return
     fi
+    # forcefully update the distfile
+    update_distfile force
+    # Now this will be accurate
     if ! is_upgrade_avail; then
-        echo "No OS Update available"
-        echo "But continuing anyway"
-        #return
+        echo "No OS Update required"
+        return
     fi
     # SKIPHASH=true
     OVERWRITE=true
@@ -47,12 +49,4 @@ function update_packages() {
     systemctl start pkgupdate.service
     # This should be killed, but exit anyway
     #exit 55
-}
-
-function reboot_machine() {
-    echo reboot
-}
-
-function factory_reset() {
-    echo factory
 }

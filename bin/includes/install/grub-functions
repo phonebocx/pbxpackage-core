@@ -87,7 +87,18 @@ install_grub_theme() {
   done
 }
 
+check_grub_options() {
+  # Note that boot/%s is a variable used in generate_grub_cfg. It needs to be there.
+  default_grub_opts="boot=live rootdelay=5 noautologin net.ifnames=0 biosdevname=0 live-media-path=boot/%s"
+  default_reset_script=/usr/local/bin/factory_reset
+  default_timeout=5
+  [ ! "$GRUB_OPTIONS" ] && GRUB_OPTIONS=$default_grub_opts
+  [ ! "$reset_script" ] && reset_script=$default_reset_script
+  [ ! "$GRUB_TIMEOUT" ] && GRUB_TIMEOUT=$default_timeout
+}
+
 generate_grub_cfg() {
+  check_grub_options
   install_grub_theme $1
   OUTFILE="$1/grub.cfg"
   DEBUG_OPTIONS="$GRUB_OPTIONS debug systemd.log_level=info"
@@ -97,7 +108,7 @@ generate_grub_cfg() {
     DEFAULT=0
   fi
 
-  sed -e "s/__DEFAULT__/$DEFAULT/" -e "s/__TIMEOUT__/$TIMEOUT/" $INCDIR/grub-header.inc >$OUTFILE
+  sed -e "s/__DEFAULT__/$DEFAULT/" -e "s/__TIMEOUT__/$GRUB_TIMEOUT/" $INCDIR/grub-header.inc >$OUTFILE
 
   madefr=""
 

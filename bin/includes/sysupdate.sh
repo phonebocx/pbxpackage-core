@@ -4,7 +4,6 @@ auto_remote_update() {
   include_component fattr.inc
   include_component spinner.inc
   include_component install/grub-functions
-  # include_component install/iso-functions
   include_component install/install-functions
   include_component install/partition-tools
   include_component install/siteconf-functions
@@ -96,7 +95,7 @@ auto_update_from_folder() {
     EFI_PARTITION=$(find_efi_partition)
   fi
 
-  DRIVE=$(echo $EFI_PARTITION | sed -r 's@/dev/(sd.|mmcblk.)(p?[[:digit:]])$@\1@')
+  DRIVE=$(echo $EFI_PARTITION | sed -r 's@/dev/([sv]d.|mmcblk.)(p?[[:digit:]])$@\1@')
   if [ ! -b "/dev/$DRIVE" ]; then
     echo "**** BUG: Found existing EFI partition $EFI_PARTITION but /dev/$DRIVE is not a block device"
     sleep 10
@@ -108,6 +107,7 @@ auto_update_from_folder() {
     FORCEDNAME=$newver"a"
   fi
 
+  # This is in includes/install/install-functions
   do_install
 
   # Remove old images befre regenerating grub

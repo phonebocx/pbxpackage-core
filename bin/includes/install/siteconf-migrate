@@ -67,7 +67,7 @@ create_missing_recovery() {
     # Not missing
     return
   fi
-  for d in /dev/mmcblk1p3 /dev/sda3; do
+  for d in /dev/mmcblk1p3 /dev/sda3 /dev/vda3; do
     if [ -b $d ]; then
       CURRENTFS=$(lsblk -n -f $d | head -1 | awk '{ print $2 }')
       if [ ! "$CURRENTFS" ]; then

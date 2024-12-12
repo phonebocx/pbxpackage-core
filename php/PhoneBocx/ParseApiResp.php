@@ -49,7 +49,12 @@ class ParseApiResp
             if (empty($j['actions'])) {
                 continue;
             }
-            foreach ($j['actions'] as $a) {
+            $actions = $j['actions'];
+            foreach ($actions as $a) {
+                if (!is_array($a)) {
+                    print "Error in apiresp, '$a' is not an array\n";
+                    continue;
+                }
                 $func = "action_" . $a['type'];
                 if (method_exists($this, $func)) {
                     $this->$func($a);

@@ -1,10 +1,7 @@
 #!/bin/bash
 # vim: set ft=sh:
 
-# Grub config
-reset_script=$COREDIR/bin/factory_reset
-GRUB_OPTIONS="boot=live rootdelay=5 noautologin net.ifnames=0 biosdevname=0 live-media-path=boot/%s"
-TIMEOUT=5
+# Default grub config is in grub-functions
 
 include_component spinner.inc
 include_component install/common-functions

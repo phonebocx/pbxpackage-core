@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# This is used by sysupdate.sh and automation.inc, as well as the dialog
+# includes. The idea is that there's only one place to update when the
+# install 'stuff' needs to change.
 do_install() {
   if [ ! "$AUTOUPDATE" ]; then
     echo "** Checking partitions on /dev/$DRIVE"
@@ -83,10 +86,20 @@ copy_image() {
   # Grab this image's distro folder
   rsync -a ${SRC_ROOT}/distro ${rootdir}
 
+  # There always needs to be a grub folder, how this could go missing
+  # is a slight worry.
+  mkdir -p ${WR_CONF}/boot/grub/
+
+  # If there's a grub-updates tarball, extract that over whatever is
+  # in grub currently.
+  if [ -e ${SRC_ROOT}/boot/grub-updates.tgz ]; then
+    tar -C ${WR_CONF}/boot/grub/ -xf ${SRC_ROOT}/boot/grub-updates.tgz
+  fi
+
   # If there is a distro png, copy ALL pngs from distro into /boot/grub,
-  # clobbering anything  that was already there
+  # clobbering anything that was already there, including anything from
+  # the grub-updates tarball above.
   if [ -e ${SRC_ROOT}/distro/splash.png ]; then
-    mkdir -p ${WR_CONF}/boot/grub/
     cp ${SRC_ROOT}/distro/*.png ${WR_CONF}/boot/grub/
   fi
   rsync -a ${SRC_ROOT}/live/packages ${rootdir}

@@ -118,6 +118,7 @@ class CoreInfo
             "eid" => $settings['eid'] ?? "ERR",
             "osbuild" => $settings['os_build'] ?? "Normal",
             "devmode" => $settings['devmode'] ?? null,
+            "osversion" => "v3",
         ];
         return FileLocations::getDistUrl() . "/nlatest?" . http_build_query($params);
     }

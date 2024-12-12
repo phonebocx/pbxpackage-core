@@ -1,3 +1,4 @@
+# Default theme from core
 desktop-image: "/boot/grub/splash.png"
 title-color: "#ffffff"
 title-font: "Unifont Regular 16"

@@ -98,7 +98,7 @@ update_from_folder() {
     EFI_PARTITION=$(find_efi_partition)
   fi
 
-  DRIVE=$(echo $EFI_PARTITION | sed -r 's@/dev/(sd.|mmcblk.)(p?[[:digit:]])$@\1@')
+  DRIVE=$(echo $EFI_PARTITION | sed -r 's@/dev/([sv]d.|mmcblk.)(p?[[:digit:]])$@\1@')
   if [ ! -b "/dev/$DRIVE" ]; then
     echo "**** BUG: Found existing EFI partition $EFI_PARTITION but /dev/$DRIVE is not a block device"
     sleep 10

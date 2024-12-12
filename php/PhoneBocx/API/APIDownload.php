@@ -52,8 +52,8 @@ class APIDownload
         return;
       }
       $bytes = file_put_contents($path, $body);
-      Logs::addLogEntry("Updated $path, wrote $bytes bytes", "System");
-      Logs::addLogEntry("$path hash was '$currenthash', is now '$bodyhash'", "System");
+      // Logs::addLogEntry("Updated $path, wrote $bytes bytes", "System");
+      // Logs::addLogEntry("$path hash was '$currenthash', is now '$bodyhash'", "System");
     }
   }
 
