@@ -67,12 +67,12 @@ create_missing_recovery() {
     # Not missing
     return
   fi
-  for d in /dev/mmcblk1p3 /dev/sda3 /dev/vda3; do
+  for d in /dev/mmcblk?p3 /dev/?da3; do
     if [ -b $d ]; then
       CURRENTFS=$(lsblk -n -f $d | head -1 | awk '{ print $2 }')
       if [ ! "$CURRENTFS" ]; then
         # Awesome. We can just create it, there's nothing there.
-        echo "** Upgrading Recovery Partition"
+        echo "** Creating Recovery Partition on $d"
         mkdosfs -F 32 -s 1 -n recovery $d
         RECOVERY_PARTITION=$d
         # This is needed so that /dev/disk/by-id and the rest are updated
