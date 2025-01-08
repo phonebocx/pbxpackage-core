@@ -83,9 +83,9 @@ foreach ($funcs as $o => $v) {
     $f = $v['callable'];
     $p = $v['params'];
     if ($v['allopts']) {
-        $r = $f($v['allopts']);
+        $r = $f($v['allopts'], $argv);
     } else {
-        $r = $f($p);
+        $r = $f($p, $argv);
     }
     if ($v['print']) {
         print $r;

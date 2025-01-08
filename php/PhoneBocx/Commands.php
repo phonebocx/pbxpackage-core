@@ -9,11 +9,6 @@ class Commands
     public static function getCommands()
     {
         $commands = [
-            "checksysinfo" => [
-                "help" => "Checks the sysinfo table.",
-                "callable" => self::class . "::checkSysInfoDb",
-                "priority" => true
-            ],
             "pkgdisplay" => [
                 "help" => "Display currently installed packages",
                 "callable" => self::class . "::showLocalPackages",
@@ -82,10 +77,11 @@ class Commands
             "pkgneedsupdate" => [
                 "help" => "Does this package need an update",
                 "callable" => self::class . "::checkPkgUpdate",
+                "example" => "--pkgneedsupdate core",
                 "print" => true,
             ],
             "pkgdownload" => [
-                "help" => "Does this package need an update",
+                "help" => "Download the package",
                 "callable" => self::class . "::downloadPkg",
                 "print" => true,
                 "extraparams" => [
@@ -125,18 +121,11 @@ class Commands
 
     public static function getAllSysInfoVal()
     {
+        PhoneBocx::checkDbStructure();
         $pb = PhoneBocx::create();
         $all = $pb->getSettings();
         unset($all['logarr']);
         return json_encode($all);
-    }
-
-    public static function checkSysInfoDb()
-    {
-        PhoneBocx::checkDbStructure();
-        $pb = PhoneBocx::create();
-        $allkeys = $pb->getSettings();
-        return json_encode($allkeys);
     }
 
     public static function getDistURL()
@@ -171,21 +160,27 @@ class Commands
     {
         $retarr = [];
         $packages = Packages::getRemotePackages();
-        if ($format) {
+        if ($format == "json") {
             foreach ($packages as $p) {
                 $retarr[$p] = Packages::remotePkgInfo($p, true);
             }
             return json_encode($retarr);
-        } else {
+        } elseif ($format == "verbose") {
             foreach ($packages as $p) {
                 $retarr[] = str_pad("$p", 12) . " " . Packages::remotePkgInfo($p);
             }
             return join("\n", $retarr) . "\n";
+        } else {
+            return join(" ", $packages);
         }
     }
 
-    public static function checkPkgUpdate(string $pkgname = "")
+    public static function checkPkgUpdate(string $pkgname = "", ?array $argv = null)
     {
+        if (!$pkgname) {
+            // --pkgneedsupdate core
+            $pkgname = array_pop($argv);
+        }
         if (Packages::doesPkgNeedUpdate($pkgname)) {
             return "true";
         }
@@ -195,6 +190,7 @@ class Commands
     public static function downloadPkg(array $params)
     {
         $force = array_key_exists('forcedownload', $params);
+        $force = true;
         $res = Packages::downloadRemotePackage($params['pkgdownload'], $params['destdir'], $force);
         $outputstyle = $params['pkgoutput'] ?? 'json';
         switch ($outputstyle) {

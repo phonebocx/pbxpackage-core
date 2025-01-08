@@ -29,9 +29,10 @@ class Packages
         return array_keys($json);
     }
 
-    public static function getLocalPackages(): array
+    public static function getLocalPackages(bool $skipdev = false): array
     {
-        if (self::$localpkgs === null) {
+        // No caching for the moment.
+        if (true || self::$localpkgs === null) {
             $retarr = [];
             // Find anything in /pbx first
             $glob = glob("/pbx/*/meta");
@@ -40,12 +41,15 @@ class Packages
                 $pkgname = basename($pkgdir);
                 $retarr[$pkgname] = $pkgdir;
             }
-            // And then clobber it with anything in /pbxdev
-            $glob = glob("/pbxdev/*/meta");
-            foreach ($glob as $m) {
-                $pkgdir = dirname($m);
-                $pkgname = basename($pkgdir);
-                $retarr[$pkgname] = $pkgdir;
+            // And then clobber it with anything in /pbxdev if we haven't
+            // been told to skip if
+            if (!$skipdev) {
+                $glob = glob("/pbxdev/*/meta");
+                foreach ($glob as $m) {
+                    $pkgdir = dirname($m);
+                    $pkgname = basename($pkgdir);
+                    $retarr[$pkgname] = $pkgdir;
+                }
             }
             self::$localpkgs = $retarr;
         }
@@ -173,32 +177,34 @@ class Packages
         return join("-", $array);
     }
 
-    public static function localPkgInfo($pkg, $asarray = false)
+    public static function localPkgInfo($pkg, $asarray = false, bool $skipdev = false)
     {
-        $pkgdir = self::getLocalPackages()[$pkg] ?? "/invalid";
+        $pkgdir = self::getLocalPackages($skipdev)[$pkg] ?? "/invalid";
         $infofile = "$pkgdir/meta/pkginfo.json";
         if (!file_exists($infofile)) {
             return "00000000-0-true";
         }
         $p = json_decode(file_get_contents($infofile), true);
-        if ($p['modified']) {
+        if ($p['modified'] ?? true) {
             $modified = "true";
         } else {
             $modified = "false";
         }
+        $commit = $p['commit'] ?? 'nocommit';
+        $utime = $p['utime'] ?? 0;
         if (self::$short) {
-            $p['commit'] = substr($p['commit'], 0, 8);
+            $commit = substr($commit, 0, 8);
         }
-        $array = [$p['commit'], $p['utime'], $modified];
+        $array = [$commit, $utime, $modified];
         if ($asarray) {
             return $array;
         }
         return join("-", $array);
     }
 
-    public static function doesPkgNeedUpdate($pkgname, $localdir = "")
+    public static function doesPkgNeedUpdate($pkgname)
     {
-        $localver = self::localPkgInfo($localdir);
+        $localver = self::localPkgInfo($pkgname, false, true);
         // If this is unpackaged, no.
         if ($localver == "00000000-0-true") {
             return false;
@@ -221,6 +227,7 @@ class Packages
         $localarr = explode("-", $localver);
         $remotearr = explode("-", $remotever);
         if ($localarr[1] < $remotearr[1]) {
+            print $localarr[1] . " is less than " . $remotearr[1] . "\n";
             return true;
         }
         return false;
