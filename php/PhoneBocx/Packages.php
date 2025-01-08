@@ -4,7 +4,7 @@ namespace PhoneBocx;
 
 class Packages
 {
-    private static $pkgurl = "/depot/packages.php";
+    private static $pkgurl = "/repo/packages.php";
     private static ?array $localpkgs = null;
     public static $update = false;
     public static $short = false;
@@ -14,7 +14,10 @@ class Packages
     public static function getFullPkgUrl(): string
     {
         $build = PhoneBocx::create()->getKey('os_build', 'unknown');
-        return FileLocations::getBaseUrl() . self::$pkgurl . "?os_build=$build";
+        // Override for the moment
+        // $baseurl = FileLocations::getBaseUrl();
+        $baseurl = "http://packages.sendfax.to/packages.php";
+        return $baseurl . "?os_build=$build";
     }
 
     public static function getRemotePackages()
@@ -71,7 +74,7 @@ class Packages
         return $retarr;
     }
 
-    public static function getCurrentJson(bool $refresh = false)
+    public static function getCurrentJson(bool $forcerefresh = false): string
     {
         $refresh = time() - 300;
         $filename = PhoneBocx::getBaseDir() . "/current.json";
@@ -83,6 +86,9 @@ class Packages
             if ($s['mtime'] < $refresh) {
                 $update = true;
             }
+        }
+        if ($forcerefresh) {
+            $update = true;
         }
         if ($update) {
             $update = self::updateFromApi($filename);
@@ -146,7 +152,8 @@ class Packages
             return false;
         }
         $remote = json_decode($json, true);
-        $p = $remote[$pkgname] ?? ["commit" => "00000000", "utime" => "0", "modified" => false];
+        $default = ["commit" => "00000000", "utime" => "0", "modified" => false, "descr" => "unknown", "releasename" => "unavalable"];
+        $p = $remote[$pkgname] ?? $default;
         if ($p['modified']) {
             $modified = "true";
         } else {
@@ -155,7 +162,11 @@ class Packages
         if (self::$short) {
             $p['commit'] = substr($p['commit'], 0, 8);
         }
-        $array = [$p['commit'], $p['utime'], $modified];
+        $relname = $p['releasename'];
+        if ($relname === 'master') {
+            $relname = $p['commit'];
+        }
+        $array = [$relname, $p['utime'], $modified];
         if ($asarray) {
             return $array;
         }
@@ -289,18 +300,37 @@ class Packages
         return self::getPkgVer($i['remote']);
     }
 
+    public static function getPackageDownloadInfo(string $name, bool $refresh = false)
+    {
+        $j = json_decode(self::getCurrentJson($refresh), true);
+        $p = $j[$name] ?? null;
+
+        if ($p === null) {
+            throw new \Exception("Unknown package $name");
+        }
+        $retarr = [];
+        foreach (['squashfs', 'meta', 'sha256file', 'sha256', 'releasename'] as $f) {
+            $retarr[$f] = $p[$f];
+        }
+        $retarr['filename'] = basename($retarr['squashfs']);
+        return $retarr;
+    }
+
     public static function downloadRemotePackage(string $name, string $destdir, bool $force = false)
     {
-        $src = "http://repo.phonebo.cx/depot";
-        $pkgfile = "$name.squashfs";
+        $urls = self::getPackageDownloadInfo($name, $force);
+        $pkgfile = $urls['filename'];
         if (!is_dir($destdir)) {
             mkdir($destdir, 0777, true);
         }
         $basedest = "$destdir/new.$pkgfile";
+        $src = $urls['squashfs'];
+        $meta = $urls['meta'];
+        $sha256file = $urls['sha256file'];
         $files = [
-            $basedest => "$src/$pkgfile",
-            "$basedest.meta" => "$src/$pkgfile.meta",
-            "$basedest.sha256" => "$src/$pkgfile.sha256",
+            $basedest => $src,
+            "$basedest.meta" => $meta,
+            "$basedest.sha256" => $sha256file,
         ];
         $retarr = [];
         foreach ($files as $d => $f) {
@@ -315,6 +345,9 @@ class Packages
                 $retarr[$d]['exists'] = true;
             }
         }
+        $relfile = "$basedest.release";
+        file_put_contents($relfile, $urls['releasename']);
+        $retarr[$relfile] = ['src' => 'auto', 'exists' => true];
         return $retarr;
     }
 }

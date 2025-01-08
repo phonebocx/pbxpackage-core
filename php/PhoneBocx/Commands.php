@@ -24,6 +24,11 @@ class Commands
                 "callable" => self::class . "::getSysInfoVal",
                 "print" => true
             ],
+            "allsysinfo" => [
+                "help" => "Show all sysinfo vals. Output is json, use jq",
+                "callable" => self::class . "::getAllSysInfoVal",
+                "print" => true
+            ],
             "disturl" => [
                 "help" => "Get the URL to check for the latest ISO",
                 "callable" => self::class . "::getDistURL",
@@ -70,6 +75,7 @@ class Commands
             ],
             "remotepkgs" => [
                 "help" => "Returns a list of remote packages",
+                "example" => "--remotepkgs=json will output json",
                 "callable" => self::class . "::remotePkgList",
                 "print" => true,
             ],
@@ -117,6 +123,14 @@ class Commands
         return $pb->getKey($v);
     }
 
+    public static function getAllSysInfoVal()
+    {
+        $pb = PhoneBocx::create();
+        $all = $pb->getSettings();
+        unset($all['logarr']);
+        return json_encode($all);
+    }
+
     public static function checkSysInfoDb()
     {
         PhoneBocx::checkDbStructure();
@@ -132,7 +146,7 @@ class Commands
 
     public static function getPkgURL()
     {
-        return Packages::getFullPkgUrl();
+        return Packages::getFullPkgUrl() . "\n";
     }
 
     public static function showLogs(?int $count = null)
@@ -153,9 +167,21 @@ class Commands
         return Packages::getCurrentJson($refresh);
     }
 
-    public static function remotePkgList()
+    public static function remotePkgList(?string $format = null)
     {
-        return join(" ", Packages::getRemotePackages());
+        $retarr = [];
+        $packages = Packages::getRemotePackages();
+        if ($format) {
+            foreach ($packages as $p) {
+                $retarr[$p] = Packages::remotePkgInfo($p, true);
+            }
+            return json_encode($retarr);
+        } else {
+            foreach ($packages as $p) {
+                $retarr[] = str_pad("$p", 12) . " " . Packages::remotePkgInfo($p);
+            }
+            return join("\n", $retarr) . "\n";
+        }
     }
 
     public static function checkPkgUpdate(string $pkgname = "")

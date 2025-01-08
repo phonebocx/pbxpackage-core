@@ -146,7 +146,7 @@ newpkgs=$(ls $dstdir/new* 2>/dev/null)
 if [ ! "$newpkgs" ]; then
   if [ ! "$foundupdates" ]; then
     echo No updates needed
-    startServicesk
+    startServices
     exit
   fi
 fi
