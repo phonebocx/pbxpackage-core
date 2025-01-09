@@ -80,7 +80,7 @@ class Packages
 
     public static function getCurrentJson(bool $forcerefresh = false): string
     {
-        $refresh = time() - 300;
+        $refresh = time() - 30;
         $filename = PhoneBocx::getBaseDir() . "/current.json";
         $update = self::$update;
         if (!file_exists($filename)) {

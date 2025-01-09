@@ -63,12 +63,12 @@ if [ ! "$cmount" ]; then
   exit 1
 fi
 
-if grep -E "$cmount.+ro," /proc/mounts; then
+if grep -q -E "$cmount.+ro," /proc/mounts; then
   mount -o remount,rw $cmount
 fi
 
 # Make sure it DID remount
-if grep -E "$cmount.+ro," /proc/mounts; then
+if grep -q -E "$cmount.+ro," /proc/mounts; then
   echo "Error: Can not make conf partition writable. Reboot and try again"
   startServices
   sleep 5
