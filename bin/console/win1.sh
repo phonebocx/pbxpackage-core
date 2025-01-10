@@ -6,6 +6,9 @@ include_component packages.inc
 include_component distro.inc
 include_component nics.inc
 
+# Refresh screen on console in case kernel junk ended up there
+tmux refresh-client -t /dev/tty1 2>/dev/null
+
 sysid=$(get_sysinfo_val systemid)
 if [ ! "$sysid" ]; then
   echo -e "ClearlyIP Fax Device - NO SYSTEM ID (Serial No $(cat /sys/class/dmi/id/product_serial))"

@@ -156,7 +156,7 @@ class Packages
             return false;
         }
         $remote = json_decode($json, true);
-        $default = ["commit" => "00000000", "utime" => "0", "modified" => false, "descr" => "unknown", "releasename" => "unavalable"];
+        $default = ["commit" => "00000000", "utime" => "0", "modified" => false, "descr" => "unknown", "releasename" => "unavalable", "dev" => true];
         $p = $remote[$pkgname] ?? $default;
         if ($p['modified']) {
             $modified = "true";
@@ -167,11 +167,12 @@ class Packages
             $p['commit'] = substr($p['commit'], 0, 8);
         }
         $relname = $p['releasename'];
-        if ($relname === 'master') {
+        if ($relname === 'master' || $p['dev']) {
             $relname = $p['commit'];
         }
         $array = [$relname, $p['utime'], $modified];
         if ($asarray) {
+            $array[] = $p['dev'];
             return $array;
         }
         return join("-", $array);
@@ -238,18 +239,24 @@ class Packages
         if (!is_array($pkginfo)) {
             $pkginfo = explode('-', $pkginfo);
         }
-        $commit = substr($pkginfo[0], 0, 8);
+        $name = substr($pkginfo[0], 0, 8);
+        $dev = $pkginfo[3] ?? true;
         $utime = $pkginfo[1];
-        if ($pkginfo[2] == "true") {
-            if ($showutime) {
-                return "mod-$utime-$commit";
-            }
-            return "mod-$commit";
-        }
+        $ret = [$name];
         if ($showutime) {
-            return "git-$utime-$commit";
+            $ret[] = $utime;
         }
-        return "git-$commit";
+        // If it's modified...
+        if ($pkginfo[2] == "true") {
+            $ret[] = "mod";
+        } else {
+            if ($dev) {
+                $ret[] = "dev";
+            } else {
+                array_unshift($ret, 'rel');
+            }
+        }
+        return join('-', $ret);
     }
 
     public static function getPkgDisplay()
