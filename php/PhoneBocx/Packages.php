@@ -228,7 +228,7 @@ class Packages
         $localarr = explode("-", $localver);
         $remotearr = explode("-", $remotever);
         if ($localarr[1] < $remotearr[1]) {
-            print $localarr[1] . " is less than " . $remotearr[1] . "\n";
+            // print $localarr[1] . " is less than " . $remotearr[1] . "\n";
             return true;
         }
         return false;
