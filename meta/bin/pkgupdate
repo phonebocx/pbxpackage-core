@@ -1,17 +1,21 @@
 #!/bin/bash
 
 if [ -e /pbxdev/core/bin/bootstrap.inc.sh ]; then
-  cd /pbxdev/core/bin
+  ROOT=/pbxdev/core/bin
 elif [ -e /pbx/core/bin/bootstrap.inc.sh ]; then
-  cd /pbx/core/bin
+  ROOT=/pbx/core/bin
 elif [ -e /factory/core/bin/bootstrap.inc.sh ]; then
-  cd /factory/core/bin
+  ROOT=/factory/core/bin
 else
   echo "Can not find bootstrap.inc anywhere major system error."
   exit 1
 fi
 
+cd $ROOT
 . ./bootstrap.inc.sh
+# Overwrite the include and coredir
+COREDIR=$ROOT
+INCDIR=$ROOT/includes
 
 include_component install/common-functions
 include_component packages.inc
