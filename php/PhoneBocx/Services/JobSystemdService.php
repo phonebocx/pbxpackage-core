@@ -57,7 +57,7 @@ class JobSystemdService
         while ($loops-- > 1) {
             if (time() > $restartafter) {
                 $this->stdout("Restarting because $restartafter is in the past");
-                break (2);
+                break (1);
             }
             $this->stdout("Starting loop, $loops remaining");
             $alltasks = $mgr->getAllScheduledTasks();
