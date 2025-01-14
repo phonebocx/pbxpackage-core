@@ -258,23 +258,24 @@ class Packages
         if (!is_array($pkginfo)) {
             $pkginfo = explode('-', $pkginfo);
         }
-        $name = substr($pkginfo[0], 0, 8);
+        $longname = substr($pkginfo[0], 0, 10);
+        $shortname = substr($pkginfo[0], 0, 8);
         $dev = $pkginfo[3] ?? true;
         $utime = $pkginfo[1];
-        $ret = [$name];
+        $ret = [$longname];
         if ($showutime) {
             $ret[] = $utime;
         }
         // If it's modified...
         if ($pkginfo[2] == "true") {
+            $ret[0] = $shortname;
             $ret[] = "mod";
         } else {
             if ($dev) {
+                $ret[0] = $shortname;
                 $ret[] = "dev";
             } else {
-                if (strlen($name) > 8) {
-                    array_unshift($ret, 'r');
-                } else {
+                if (strlen($longname) <= 8) {
                     array_unshift($ret, 'rel');
                 }
             }

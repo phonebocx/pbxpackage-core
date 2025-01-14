@@ -48,11 +48,17 @@ class JobSystemdService
 
     public function go()
     {
-        $loops = 50;
-        Logs::addLogEntry("Systemd Service Started, will run $loops times before restarting", 'Service');
+        // Restart after 24 hours or 500 loops
+        $loops = 500;
+        $restartafter = time() + 86400;
+        // Logs::addLogEntry("Systemd Service restarted", 'Service');
         $this->stderr("Service Starting, will do $loops loops before restarting");
         $mgr = $this->pbx->getServiceMgr();
         while ($loops-- > 1) {
+            if (time() > $restartafter) {
+                $this->stdout("Restarting because $restartafter is in the past");
+                break (2);
+            }
             $this->stdout("Starting loop, $loops remaining");
             $alltasks = $mgr->getAllScheduledTasks();
             if (!$alltasks) {
