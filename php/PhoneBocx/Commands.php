@@ -68,6 +68,11 @@ class Commands
                 "callable" => self::class . "::pkgJson",
                 "print" => true,
             ],
+            "pkgdump" => [
+                "help" => "Dump all package info (remote and local)",
+                "callable" => self::class . "::pkgDump",
+                "print" => true,
+            ],
             "remotepkgs" => [
                 "help" => "Returns a list of remote packages",
                 "example" => "--remotepkgs=json will output json",
@@ -154,6 +159,24 @@ class Commands
             $refresh = false;
         }
         return Packages::getCurrentJson($refresh);
+    }
+
+    public static function pkgDump()
+    {
+        $remotejson = json_decode(Packages::getCurrentJson(), true);
+        $retarr = ["remote" => ["json" => $remotejson, "packages" => []], "local" => []];
+        $packages = Packages::getRemotePackages();
+        foreach ($packages as $p) {
+            $rarr = Packages::remotePkgInfo($p, true);
+            $rstr = Packages::remotePkgInfo($p, false);
+            $retarr['remote']['packages'][$p] = ["info" => $rstr, "infoarr" => $rarr];
+        }
+        foreach (Packages::getLocalPackages() as $p => $loc) {
+            $larr = Packages::localPkgInfo($p, true);
+            $lstr = Packages::localPkgInfo($p, false);
+            $retarr['local'][$p] = ["loc" => $loc, "info" => $lstr, "infoarr" => $larr];
+        }
+        return json_encode($retarr);
     }
 
     public static function remotePkgList(?string $format = null)

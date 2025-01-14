@@ -7,7 +7,7 @@ class Packages
     private static $pkgurl = "/repo/packages.php";
     private static ?array $localpkgs = null;
     public static $update = false;
-    public static $short = false;
+    public static $short = true;
 
     public static $quiet = true;
 
@@ -149,6 +149,45 @@ class Packages
         return true;
     }
 
+    public static function parsePackageInfo(array $pkginfo, bool $forcestring = true)
+    {
+        $retarr = [
+            "commit" => "00000000",
+            "utime" => "0",
+            "modified" => false,
+            "descr" => "unknown",
+            "releasename" => "master",
+            "dev" => true
+        ];
+        foreach ($retarr as $k => $default) {
+            $retarr[$k] = $pkginfo[$k] ?? $default;
+        }
+        if (self::$short) {
+            $retarr['commit'] = substr($retarr['commit'], 0, 8);
+        }
+        // Make sure there's not any bad chars in the release name that
+        // may confuse things
+        $retarr['releasename'] = str_replace([" ", "-", "/"], "", $retarr['releasename']);
+        $relname = $retarr['releasename'];
+        // If we're on master, then there's no release name
+        if ($relname === 'master') {
+            $retarr['releasename'] = $retarr['commit'];
+        } else {
+            // If we're on a dev branch, AND we're modified, update
+            if ($retarr['dev'] && $retarr['modified']) {
+                $retarr['releasename'] = $retarr['commit'];
+            }
+        }
+        if ($forcestring) {
+            if ($retarr['modified']) {
+                $retarr['modified'] = "true";
+            } else {
+                $retarr['modified'] = "false";
+            }
+        }
+        return $retarr;
+    }
+
     public static function remotePkgInfo($pkgname, $asarray = false)
     {
         $json = self::getCurrentJson();
@@ -156,23 +195,10 @@ class Packages
             return false;
         }
         $remote = json_decode($json, true);
-        $default = ["commit" => "00000000", "utime" => "0", "modified" => false, "descr" => "unknown", "releasename" => "unavalable", "dev" => true];
-        $p = $remote[$pkgname] ?? $default;
-        if ($p['modified']) {
-            $modified = "true";
-        } else {
-            $modified = "false";
-        }
-        if (self::$short) {
-            $p['commit'] = substr($p['commit'], 0, 8);
-        }
-        $relname = $p['releasename'];
-        if ($relname === 'master' || $p['dev']) {
-            $relname = $p['commit'];
-        }
-        $array = [$relname, $p['utime'], $modified];
+        $pkginfo = self::parsePackageInfo($remote[$pkgname]);
+        $array = [$pkginfo['releasename'], $pkginfo['utime'], $pkginfo['modified']];
         if ($asarray) {
-            $array[] = $p['dev'];
+            $array[] = $pkginfo['dev'];
             return $array;
         }
         return join("-", $array);
@@ -183,21 +209,14 @@ class Packages
         $pkgdir = self::getLocalPackages($skipdev)[$pkg] ?? "/invalid";
         $infofile = "$pkgdir/meta/pkginfo.json";
         if (!file_exists($infofile)) {
-            return "00000000-0-true";
-        }
-        $p = json_decode(file_get_contents($infofile), true);
-        if ($p['modified'] ?? true) {
-            $modified = "true";
+            $p = [];
         } else {
-            $modified = "false";
+            $p = json_decode(file_get_contents($infofile), true);
         }
-        $commit = $p['commit'] ?? 'nocommit';
-        $utime = $p['utime'] ?? 0;
-        if (self::$short) {
-            $commit = substr($commit, 0, 8);
-        }
-        $array = [$commit, $utime, $modified];
+        $pkginfo = self::parsePackageInfo($p);
+        $array = [$pkginfo['releasename'], $pkginfo['utime'], $pkginfo['modified']];
         if ($asarray) {
+            $array[] = $pkginfo['dev'];
             return $array;
         }
         return join("-", $array);
@@ -311,6 +330,11 @@ class Packages
         if (self::doesPkgNeedUpdate($name)) {
             return self::getPkgVer($i['remote']) . " (Update)";
         }
+        // Note this means that if a dev version is installed, and it
+        // is just tagged as a release, the release name will be displayed.
+
+        // This is so that we don't need to push out a bunch of
+        // identical builds just to change the name.
         return self::getPkgVer($i['remote']);
     }
 
