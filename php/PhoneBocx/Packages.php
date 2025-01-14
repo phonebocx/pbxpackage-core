@@ -272,7 +272,11 @@ class Packages
             if ($dev) {
                 $ret[] = "dev";
             } else {
-                array_unshift($ret, 'rel');
+                if (strlen($name) > 8) {
+                    array_unshift($ret, 'r');
+                } else {
+                    array_unshift($ret, 'rel');
+                }
             }
         }
         return join('-', $ret);
@@ -298,24 +302,40 @@ class Packages
             $pkginfo[$p]['local'] = self::localPkgInfo($p, true);
         }
         $pieces = [];
+        $upgrades = [];
+        $current = [];
         foreach ($pkginfo as $p => $data) {
+            $current[$p] = self::getPkgVer($data['local']);
             $pieces[$p] = self::formatPkgInfo($p, $data);
+            if (self::doesPkgNeedUpdate($p)) {
+                $upgrades[$p] = self::getPkgVer($data['remote']);
+            }
         }
         $chunklen = 35;
         $maxlen = 36;
         $lines = [];
         $thisline = "";
+        $nextlines = [];
         foreach ($pieces as $name => $desc) {
             $thisline .= substr(str_pad(sprintf("%10s: %s", $name, $desc), $chunklen), 0, $chunklen);
+            if (!empty($upgrades[$name])) {
+                $nextlines[] = sprintf("%10s - New package version available: '%s'", $name, $upgrades[$name]);
+            }
             if (strlen($thisline) > $maxlen) {
                 $lines[] = $thisline;
                 $thisline = "";
+                foreach ($nextlines as $l) {
+                    $lines[] = $l;
+                }
+                $nextlines = [];
             }
         }
         if ($thisline) {
             $lines[] = $thisline;
         }
-
+        foreach ($nextlines as $l) {
+            $lines[] = $l;
+        }
         return join("\n", $lines) . "\n";
     }
 
@@ -328,7 +348,7 @@ class Packages
             return self::getPkgVer($i['local']) . " (Unavail)";
         }
         if (self::doesPkgNeedUpdate($name)) {
-            return self::getPkgVer($i['remote']) . " (Update)";
+            return self::getPkgVer($i['local']) . " (Update)";
         }
         // Note this means that if a dev version is installed, and it
         // is just tagged as a release, the release name will be displayed.
