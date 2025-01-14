@@ -1,1 +1,225 @@
-../../bin/pkgupdate
+#!/bin/bash
+
+cd "$(dirname "$(readlink -f "$0")")"
+if [ ! -e "./bootstrap.inc.sh" ]; then
+  echo "Can not find bootstrap.inc in $(pwd), major system error."
+  exit 1
+fi
+
+. ./bootstrap.inc.sh
+
+include_component install/common-functions
+include_component packages.inc
+
+# Just in case this ends up being a config option somewhere
+MOUNTPOINT=/pbx
+
+# There probably should be a hook to generate a list of services.
+SERVICES="getty@tty1 phonebocx-servicemgr"
+
+function startServices() {
+  for s in $SERVICES; do
+    systemctl start $s
+  done
+}
+
+function stopServices() {
+  for s in $SERVICES; do
+    systemctl stop $s
+  done
+}
+
+#FORCE=true
+
+# Make sure we're not going stop anything unmounting later,
+# so move out of /pbx or /pbxdev or wherever we ended up
+cd /
+
+if [ "$1" == "--check" ]; then
+  checkonly="true"
+else
+  checkonly=""
+fi
+
+if [ "$1" == "--refresh" ]; then
+  CURRENT=$(/usr/local/bin/util --pkgdisplay=true)
+else
+  CURRENT=$(/usr/local/bin/util --pkgdisplay)
+fi
+
+CONF_PARTITION=$(find_conf_partition)
+if [ ! "$CONF_PARTITION" ]; then
+  echo Crazy problem, no conf partition found!
+  startServices
+  sleep 5
+  exit 1
+fi
+
+cmount=$(grep $CONF_PARTITION /proc/mounts | head -1 | cut -d\  -f2)
+if [ ! "$cmount" ]; then
+  echo "CONF_PARTITION isn't in /proc/mounts, so can't figure out where to put stuff"
+  startServices
+  sleep 5
+  exit 1
+fi
+
+if grep -q -E "$cmount.+ro," /proc/mounts; then
+  mount -o remount,rw $cmount
+fi
+
+# Make sure it DID remount
+if grep -q -E "$cmount.+ro," /proc/mounts; then
+  echo "Error: Can not make conf partition writable. Reboot and try again"
+  startServices
+  sleep 5
+  exit 1
+fi
+
+r=$(get_running_version)
+if [ "$r" == "live" ]; then
+  echo "This is not an installed system, can not update packages on ISO"
+  startServices
+  sleep 5
+  exit 1
+fi
+
+dstdir=$cmount/boot/$r/packages
+
+if [ "$FORCE" ]; then
+  FORCEPARAM="--forcedownload"
+else
+  FORCEPARAM=""
+fi
+
+mkdir -p $dstdir
+
+# Make sure we lock!
+LOCKFILE=/tmp/pkgupdate.lock
+(
+  flock -n -e 200 || exit 56
+  foundupdates=""
+  for r in $(get_remote_packages); do
+    # echo checking $r
+    check=$(pkg_needs_update $r)
+    if [ "$check" -o "$FORCE" ]; then
+      PKGFILES=$(/usr/local/bin/util --pkgdownload=$r --destdir=$dstdir $FORCEPARAM)
+      # This should have output any error to stderr, don't need to display them
+      if [ ! "$PKGFILES" ]; then
+        #echo "Error: Could not download package $r"
+        continue
+      fi
+      # Now check them
+      PKGERRORS=$(/usr/local/bin/util --checkdownload=$dstdir/new.$r.squashfs)
+      if [ "$PKGERRORS" ]; then
+        # echo "I have package errors of $PKGERRORS, removing downloaded package"
+        rm -f $PKGFILES
+      else
+        foundupdates="$foundupdates $r"
+      fi
+    else
+      echo "No update for $r" >/dev/null
+    fi
+  done
+  echo "$foundupdates" >/tmp/foundupdates
+) 200>$LOCKFILE
+
+ERR=$?
+if [ "$ERR" == "56" ]; then
+  # Unable to lock, don't do anything
+  echo "Unable to lock system to check for package updates. Reboot and try again."
+  startServices
+  sleep 5
+  exit 1
+fi
+
+foundupdates=$(cat /tmp/foundupdates 2>/dev/null)
+if [ "$checkonly" ]; then
+  echo -n "$foundupdates"
+  startServices
+  exit 0
+fi
+
+# Check to see if there's any 'new.*' packages that need to be
+# installed
+newpkgs=$(ls $dstdir/new* 2>/dev/null)
+
+if [ ! "$newpkgs" ]; then
+  if [ ! "$foundupdates" ]; then
+    echo No updates needed
+    startServices
+    exit
+  fi
+fi
+
+# Make sure our services are stopped
+stopServices
+
+# And ensure the console session is dead, in case it somehow hung around
+tmux kill-session -a
+tmux kill-session -t console
+
+# Now, try to unmount everything
+RETRIES=10
+while [ "$RETRIES" -ge 0 ]; do
+  if ! grep -q " $MOUNTPOINT/" /proc/mounts; then
+    break
+  fi
+  for p in $(grep " $MOUNTPOINT/" /proc/mounts | cut -d\  -f2); do
+    umount $p
+  done
+  sleep 1
+  RETRIES=$(($RETRIES - 1))
+done
+
+if grep -q " $MOUNTPOINT/" /proc/mounts; then
+  mustreboot="yes"
+else
+  mustreboot=""
+fi
+
+# Now update our new packages
+for n in $dstdir/new.*.squashfs; do
+  if [ ! -e "$n" ]; then
+    # Nothing matched. How???
+    continue
+  fi
+  b=$(basename $n | sed -e 's/^new\.//' -e 's/\.squashfs$//')
+  echo "Installing new package '$b'"
+  # Remove the previous version
+  rm -f $dstdir/old.$b.squashfs*
+  # Rename the current package (if it exists) into old.pkgname
+  for x in $dstdir/$b.squash*; do
+    if [ -e "$x" ]; then
+      mv $x $dstdir/old.$(basename $x)
+    fi
+  done
+  # Now move the new ones in place
+  for x in $dstdir/new.$b.squash*; do
+    mv $x $dstdir/$(basename $x | sed 's/^new\.//')
+  done
+done
+
+if [ "$mustreboot" ]; then
+  # For some reason, we weren't able to unmount everything.
+  # I guess we should remount everything again, and schedule a reboot
+  echo reboot time!
+  exit 1
+fi
+
+# Mount our packages again
+for x in $dstdir/*.squashfs; do
+  # If it starts with old or new, ignore.
+  ignore=$(basename $x | grep -E '^(old|new).')
+  if [ "$ignore" ]; then
+    continue
+  fi
+  pack=$(basename $x | sed 's/.squashfs//')
+  mkdir -p $MOUNTPOINT/$pack
+  mount $x $MOUNTPOINT/$pack
+done
+
+# Now everything is back as it should be, we can trigger the boot
+# service, and then all the rest
+systemctl start phonebocx-boot
+sleep 1
+startServices
