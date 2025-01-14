@@ -1,8 +1,13 @@
 #!/bin/bash
 
-cd "$(dirname "$(readlink -f "$0")")"
-if [ ! -e "./bootstrap.inc.sh" ]; then
-  echo "Can not find bootstrap.inc in $(pwd), major system error."
+if [ -e /pbxdev/core/bin/bootstrap.inc.sh ]; then
+  cd /pbxdev/core/bin
+elif [ -e /pbx/core/bin/bootstrap.inc.sh ]; then
+  cd /pbx/core/bin
+elif [ -e /factory/core/bin/bootstrap.inc.sh ]; then
+  cd /factory/core/bin
+else
+  echo "Can not find bootstrap.inc anywhere major system error."
   exit 1
 fi
 
