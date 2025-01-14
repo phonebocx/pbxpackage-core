@@ -18,5 +18,12 @@ for x in $PACKAGEDIR/meta/bin/*; do
     else
         src=$x
     fi
-    ln -sf $src $dest
+    # If this is pkgupdate, copy don't link, otherwise
+    # it never unmounts! Otherwise, just link it.
+    if [ "$dest" == "/usr/local/bin/pkgupdate" ]; then
+        rm -f $dest
+        cp $src $dest
+    else
+        ln -sf $src $dest
+    fi
 done
