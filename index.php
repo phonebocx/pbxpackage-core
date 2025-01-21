@@ -3,8 +3,9 @@
 
 use PhoneBocx\Packages;
 use PhoneBocx\WebAuth;
+use PhoneBocx\WebUI\DebugTools;
 
-include __DIR__ . "/php/boot.php";
+include "/usr/local/bin/phpboot.php";
 
 $html = [
   "favicon" => "/core/sendfax.ico",
@@ -16,6 +17,11 @@ $html = [
   "scripts" => ["/core/js/jquery-3.6.0.min.js"],
   "end" => ["</html>"],
 ];
+
+$action = $_REQUEST['action'] ?? '';
+if ($action === 'logout') {
+  WebAuth::logOut();
+}
 
 $packages = Packages::getLocalPackages();
 $hookfiles = [];
@@ -49,6 +55,12 @@ foreach ($hookfiles as $p => $f) {
     $fname($html, $hookfiles);
     $includes[$fname] = $f;
   }
+}
+
+if (!empty($_REQUEST['debug'])) {
+  $d = new DebugTools($_REQUEST);
+  $d->setLoggedIn(WebAuth::isLoggedIn());
+  $html = $d->updateHtmlArr($html);
 }
 
 print '<!doctype html><html lang="en"><head profile="http://www.w3.org/2005/10/profile">' . implode("\n", $html['head']) . "\n";

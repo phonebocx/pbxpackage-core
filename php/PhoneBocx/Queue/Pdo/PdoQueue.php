@@ -43,6 +43,26 @@ abstract class PdoQueue implements Queue
     }
 
     /**
+     * Get the raw PDO object
+     *
+     * @return \PDO
+     */
+    public function getPdo(): \PDO
+    {
+        return $this->pdo;
+    }
+
+    /**
+     * Get the table name that is being used for this queue
+     *
+     * @return string
+     */
+    public function getTablename(): string
+    {
+        return $this->tableName;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function push($item, $eta = null, $ref = null)

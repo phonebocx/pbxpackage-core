@@ -133,10 +133,9 @@ function parseResponse() {
     rm -f $tmpfile
   done
 
-  # Generate sysinfo.ini because it's useful. Note that
-  # CDIR prefers /pbxdev over /pbx, it may not be running
-  # the one you're expecting!
-  [ -e $CDIR/php/sysinfo.php ] && $CDIR/php/sysinfo.php -i
+  # Generate sysinfo.ini because it's useful. Outputs
+  # an ini format to /var/run/distro/sysinfo.ini
+  [ -e /usr/local/bin/util ] && /usr/local/bin/util --allsysinfo=ini
 
   # Now, if there was an api callback, do that.
   #  -- queuefile is set in api.inc

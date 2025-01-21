@@ -24,7 +24,12 @@ class MainPage extends Base
             "kernel" => CoreInfo::getKernelVersion(),
             "services" => CoreInfo::getServices(),
         ];
-        $retarr['packages'] = Packages::getPackageReport();
+        try {
+            $retarr['packages'] = Packages::getPackageReport();
+        } catch (\Exception $e) {
+            $retarr['packages'] = [];
+            $retarr['error'] = $e->getMessage();
+        }
         return $retarr;
     }
 

@@ -2,6 +2,7 @@
 
 namespace PhoneBocx;
 
+use PhoneBocx\Commands\QueueUtils;
 use PhoneBocx\Services\JobSystemdService;
 
 class Commands
@@ -20,7 +21,7 @@ class Commands
                 "print" => true
             ],
             "allsysinfo" => [
-                "help" => "Show all sysinfo vals. Output is json, use jq",
+                "help" => "Show all sysinfo vals. Output is json, use jq, or set param to ini to generate /var/run/disto/sysinfo.ini",
                 "callable" => self::class . "::getAllSysInfoVal",
                 "print" => true
             ],
@@ -100,6 +101,11 @@ class Commands
                 "callable" => self::class . "::checkPkgHashes",
                 "print" => true,
             ],
+            "queuestats" => [
+                "help" => "Get job queue stats",
+                "callable" => QueueUtils::class . "::getSummary",
+                "print" => true,
+            ],
         ];
         // Important: Pass by ref!
         $params = ["commands" => &$commands];
@@ -124,13 +130,59 @@ class Commands
         return $pb->getKey($v);
     }
 
-    public static function getAllSysInfoVal()
+    public static function getAllSysInfoVal($param = "")
     {
         PhoneBocx::checkDbStructure();
         $pb = PhoneBocx::create();
         $all = $pb->getSettings();
         unset($all['logarr']);
-        return json_encode($all);
+        if (!$param) {
+            return json_encode($all);
+        }
+        if ($param == "ini") {
+            $dest = "/var/run/distro/sysinfo.ini";
+        } else {
+            return "No support for writing ini files elsewhere, including '$param' Sorry\n";
+        }
+        $comparison = $all;
+        // Skip any keys we don't care about comparing
+        foreach (array_keys($comparison) as $k) {
+            if (strpos($k, "lastrun") === 0) {
+                unset($comparison[$k]);
+            }
+        }
+        unset($comparison['vpninfo']);
+        ksort($comparison);
+        $destdir = dirname($dest);
+        if (!is_dir($destdir)) {
+            // How?
+            mkdir($destdir, 0777, true);
+        }
+        if (file_exists($dest)) {
+            $currentini = file($dest, \FILE_IGNORE_NEW_LINES | \FILE_SKIP_EMPTY_LINES);
+            $lastline = array_pop($currentini);
+            $tmparr = explode(" ", $lastline);
+            $checksum = $tmparr[1] ?? "_missing_";
+        } else {
+            $currentini = [];
+            $checksum = "_notpresent_";
+        }
+        $j = json_encode($comparison);
+        $jchecksum = hash('sha256', $j);
+        if ($jchecksum === $checksum) {
+            return;
+        }
+        $inibody = ["# sysinfo.ini created by getAllSysInfoVal - do not consume!", "exit 42"];
+        foreach ($all as $k => $v) {
+            if (is_array($v)) {
+                $inibody[] = "$k='" . json_encode($v) . "'";
+            } else {
+                $inibody[] = "$k=$v";
+            }
+        }
+        $inibody[] = "# $jchecksum - was $checksum";
+        file_put_contents($dest, join("\n", $inibody) . "\n");
+        return;
     }
 
     public static function getDistURL()

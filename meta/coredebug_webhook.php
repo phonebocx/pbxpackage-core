@@ -1,5 +1,6 @@
 <?php
 
+use PhoneBocx\WebUI\DebugTools;
 
 function coredebug_sidebarname()
 {
@@ -14,7 +15,10 @@ function coredebug_sidebarclasxs()
 function coredebug_divcontent()
 {
   $str = "<p><ul>";
-  $str .= "<li>Debug tools go here</li>";
+  $entries = DebugTools::getToolList();
+  foreach ($entries as $name => $row) {
+    $str .= "<li>" . DebugTools::getToolHtml($name);
+  }
   $str .= "</ul></p>";
   return $str;
 }
@@ -26,5 +30,5 @@ function coredebug_iconname()
 
 function coredebug_header()
 {
-  return "System Tools and Information";
+  return "System Tools";
 }

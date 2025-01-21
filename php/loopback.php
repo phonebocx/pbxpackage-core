@@ -4,16 +4,23 @@
 // It only binds to localhost:4680 and should be used only for
 // things that must run as root.
 
-require __DIR__ . "/vendor/autoload.php";
+use PhoneBocx\WebUI\DebugTools\DebugInterface;
+use PhoneBocx\WebUI\DebugTools\GenericCallback;
+use PhoneBocx\WebUI\DebugTools\RebootDevice;
+
+include "/usr/local/bin/phpboot.php";
 
 $tmparr = parse_url($_SERVER['REQUEST_URI'] ?? "/test");
 
 $c = getCallable($tmparr);
-if (!is_callable($c)) {
-    print "Not callable when asking for " . json_encode($tmparr) . "\n";
-    exit(1);
-}
-$c();
+/** @var DebugInterface $c */
+$c->runAsRoot();
+
+// Now murder the SAPI instance so it restarts
+$mypid = posix_getpid();
+posix_kill($mypid, -9);
+exec("kill -9 $mypid");
+print "I should be dead now\n";
 
 function getStderr()
 {
@@ -24,16 +31,14 @@ function getStderr()
     return $fh;
 }
 
-function getCallable(array $tmparr)
+function getCallable(array $tmparr): DebugInterface
 {
     $path = $tmparr['path'] ?? '/error';
     switch ($path) {
+        case '/reboot':
+            return new RebootDevice($_REQUEST);
         case '/error':
-            return function () {
-                print "Invalid path";
-            };
+            return new GenericCallback(["Invalid Path"]);
     }
-    return function () {
-        print "Unknown function\n";
-    };
+    return new GenericCallback(["Unknown function sent to $path"]);
 }

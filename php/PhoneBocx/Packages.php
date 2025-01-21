@@ -97,13 +97,13 @@ class Packages
         if ($update) {
             $update = self::updateFromApi($filename);
             if ($update !== true) {
-                throw new \Exception("Update failed");
+                throw new \Exception("Update failed to $filename");
             }
         }
         if (!file_exists($filename)) {
             throw new \Exception("$filename does not exist");
         }
-        chmod($filename, 0777);
+        @chmod($filename, 0777);
         return file_get_contents($filename);
     }
 
@@ -130,20 +130,14 @@ class Packages
             sleep(1);
         }
         if (!$locked) {
-            print "Couldn't lock after 5 attempts, giving up\n";
-            return false;
+            throw new \Exception("Couldn't lock after 5 attempts, giving up");
         }
         try {
             $url = self::getFullPkgUrl();
             PhoneBocx::safeGet($dest, $url, true);
         } catch (\Exception $e) {
             fclose($lockfh);
-            if (!self::$quiet) {
-                print "updateFromApi Error: " . $e->getMessage() . "\n";
-                print "Tried $url\n";
-                return $e->getMessage();
-            }
-            return false;
+            throw $e;
         }
         fclose($lockfh);
         return true;
