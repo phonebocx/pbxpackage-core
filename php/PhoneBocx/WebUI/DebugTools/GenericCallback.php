@@ -21,8 +21,9 @@ class GenericCallback implements DebugInterface
         return true;
     }
 
-    public function runAsRoot()
+    public function runAsRoot(): bool
     {
         print array_shift($this->request);
+        return false;
     }
 }

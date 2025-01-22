@@ -16,5 +16,11 @@ interface DebugInterface
 
     public function updateHtmlArr(array $html): array;
 
-    public function runAsRoot();
+    /**
+     * If this returns false, loopback should not
+     * self-kill the current process.
+     *
+     * @return boolean
+     */
+    public function runAsRoot(): bool;
 }

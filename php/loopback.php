@@ -12,15 +12,20 @@ include "/usr/local/bin/phpboot.php";
 
 $tmparr = parse_url($_SERVER['REQUEST_URI'] ?? "/test");
 
-$c = getCallable($tmparr);
 /** @var DebugInterface $c */
-$c->runAsRoot();
+$c = getCallable($tmparr);
 
-// Now murder the SAPI instance so it restarts
-$mypid = posix_getpid();
-posix_kill($mypid, -9);
-exec("kill -9 $mypid");
-print "I should be dead now\n";
+// You almost always want to self-kill, to restart and
+// reload the php process. The only (current) reason NOT
+// to is for the generic responses.
+$shouldkill = $c->runAsRoot();
+ob_flush();
+if ($shouldkill) {
+    $mypid = posix_getpid();
+    posix_kill($mypid, -9);
+    exec("kill -9 $mypid");
+    print "I should be dead now\n";
+}
 
 function getStderr()
 {
