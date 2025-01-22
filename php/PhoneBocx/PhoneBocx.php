@@ -36,6 +36,9 @@ class PhoneBocx
             }
             // If it doesn't exist, create it!
             if (!is_dir(self::$basedir)) {
+                if (posix_getuid() !== 0) {
+                    throw new \Exception("Basedir " . self::$basedir . " does not exist this is not running as root");
+                }
                 mkdir(self::$basedir);
                 chmod(self::$basedir, 0777);
             }

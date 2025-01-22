@@ -25,6 +25,8 @@ API=https://api.phonebo.cx/api
 LATESTISO=$BASEURL/latest.iso
 
 export BASEDIR=/var/run/distro
+mkdir -p $BASEDIR
+chmod 0777 $BASEDIR
 LOGDIR=$BASEDIR/distrolog
 
 OVERWRITE=yeah
