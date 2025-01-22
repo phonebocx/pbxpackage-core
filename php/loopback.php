@@ -5,6 +5,7 @@
 // things that must run as root.
 
 use PhoneBocx\WebUI\DebugTools\DebugInterface;
+use PhoneBocx\WebUI\DebugTools\DelOldSiteconf;
 use PhoneBocx\WebUI\DebugTools\GenericCallback;
 use PhoneBocx\WebUI\DebugTools\RebootDevice;
 
@@ -42,6 +43,8 @@ function getCallable(array $tmparr): DebugInterface
     switch ($path) {
         case '/reboot':
             return new RebootDevice($_REQUEST);
+        case '/delsiteconf':
+            return new DelOldSiteconf($_REQUEST);
         case '/error':
             return new GenericCallback(["Invalid Path"]);
     }

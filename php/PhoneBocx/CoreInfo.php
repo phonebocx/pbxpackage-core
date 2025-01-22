@@ -7,6 +7,10 @@ class CoreInfo
     private static $settings;
     private static $distfile = "/var/run/phonebocx/latest.dist";
 
+    // These should match bootstrap.inc
+    private static $conflabel = '7680d283ce83';
+    private static $recoverylabel = 'recovery';
+
     private static function getSettings($refresh = false)
     {
         if ($refresh || !self::$settings) {
@@ -172,5 +176,26 @@ class CoreInfo
     {
         $queue = Queue::create();
         return $queue->count();
+    }
+
+    private static function getVolByLabel(string $label): ?string
+    {
+        $path = "/dev/disk/by-label/$label";
+        if (!file_exists($path)) {
+            return null;
+        }
+        return realpath($path);
+    }
+
+    public static function getConfVol(?string $forcelabel = null): ?string
+    {
+        $label = $forcelabel ?? self::$conflabel;
+        return self::getVolByLabel($label);
+    }
+
+    public static function getRecoveryVol(?string $forcelabel = null): ?string
+    {
+        $label = $forcelabel ?? self::$recoverylabel;
+        return self::getVolByLabel($label);
     }
 }

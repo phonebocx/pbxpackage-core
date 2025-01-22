@@ -3,9 +3,11 @@
 namespace PhoneBocx\WebUI\DebugTools;
 
 use GuzzleHttp\Client;
+use PhoneBocx\AsRoot\RemountConf;
 
-class RebootDevice implements DebugInterface
+class DelOldSiteconf implements DebugInterface
 {
+    protected static string $filename = "/run/live/medium/oldsiteconf";
 
     protected array $request;
 
@@ -16,16 +18,17 @@ class RebootDevice implements DebugInterface
 
     public static function shouldBeShown(): bool
     {
-        return true;
+        return file_exists(self::$filename);
     }
 
     public function updateHtmlArr(array $html): array
     {
+        header("Location: /");
         $c = new Client();
-        $req = $c->get("http://localhost:4680/reboot");
-        print "This should never be reached\n";
+        $req = $c->get("http://localhost:4680/delsiteconf");
+        print "Redirecting to /\n";
         print "'" . $req->getBody() . "'\n";
-        return $html;
+        exit;
     }
 
     public function canRunWithoutLogin(): bool
@@ -35,10 +38,10 @@ class RebootDevice implements DebugInterface
 
     public function runAsRoot(): bool
     {
-        // This should never be seen as reboot -f is RIGHT NOW
-        $cmd = "/usr/sbin/reboot -f";
-        exec($cmd, $output, $res);
-        print "Ran  '$cmd', now have " . json_encode([$res, $output]) . "\n";
+        $c = new RemountConf();
+        $c->mountRw();
+        print "Deleting " . self::$filename . "\n";
+        unlink(self::$filename);
         return true;
     }
 }

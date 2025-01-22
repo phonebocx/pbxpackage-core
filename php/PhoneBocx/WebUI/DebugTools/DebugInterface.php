@@ -5,6 +5,8 @@ namespace PhoneBocx\WebUI\DebugTools;
 /** @package PhoneBocx\WebUI\DebugTools */
 interface DebugInterface
 {
+    public static function shouldBeShown(): bool;
+
     public function __construct(array $request);
 
     /**

@@ -2,12 +2,20 @@
 <?php
 
 use PhoneBocx\API;
+use PhoneBocx\AsRoot\RemountConf;
 use PhoneBocx\Dahdi;
 use PhoneBocx\Logs;
 use PhoneBocx\PhoneBocx;
 
 include __DIR__ . "/boot.php";
 
+$c = new RemountConf();
+var_dump($c->isReadWrite());
+var_dump($c->mountRw());
+var_dump($c->isReadWrite());
+var_dump($c->mountRo());
+var_dump($c->isReadWrite());
+exit;
 $p = PhoneBocx::create();
 $s = $p->getServiceMgr();
 var_dump($s->runNextTask());

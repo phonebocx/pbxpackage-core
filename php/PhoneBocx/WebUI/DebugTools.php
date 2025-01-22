@@ -3,17 +3,26 @@
 namespace PhoneBocx\WebUI;
 
 use PhoneBocx\WebUI\DebugTools\DebugInterface;
+use PhoneBocx\WebUI\DebugTools\DelOldSiteconf;
 use PhoneBocx\WebUI\DebugTools\RebootDevice;
 
 class DebugTools
 {
     public static array $tools = [
-        "reboot" => ["name" => "Reboot Device", "class" => RebootDevice::class],
+        "reboot" => ["name" => "Reboot Device", "obj" => RebootDevice::class],
+        "siteconf" => ["name" => "Cleanup from Upgrade", "obj" => DelOldSiteconf::class],
     ];
 
     public static function getToolList()
     {
-        return self::$tools;
+        $retarr = self::$tools;
+        foreach ($retarr as $name => $row) {
+            $c = $row['obj'];
+            if (!$c::shouldBeShown()) {
+                unset($retarr[$name]);
+            }
+        }
+        return $retarr;
     }
 
     public static function getToolPath(string $name)
@@ -46,7 +55,7 @@ class DebugTools
     {
         $this->request = $request;
         $tool = self::$tools[$request['debug']];
-        $this->handler = new $tool['class']($this->request);
+        $this->handler = new $tool['obj']($this->request);
     }
 
     public function setLoggedIn(bool $isloggedin)

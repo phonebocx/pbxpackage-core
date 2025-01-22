@@ -11,6 +11,11 @@ class GenericCallback implements DebugInterface
         $this->request = $request;
     }
 
+    public static function shouldBeShown(): bool
+    {
+        return false;
+    }
+
     public function updateHtmlArr(array $html): array
     {
         return $html;
