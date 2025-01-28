@@ -1,6 +1,9 @@
 <?php
 
+use PhoneBocx\AsRoot\ConsoleScreenshot;
 use PhoneBocx\WebUI\MainPage;
+use PhoneBocx\WebUI\Screenshot;
+
 
 if (!file_exists("/usr/local/bin/phpboot.php")) {
     // Hasn't finished booting
@@ -22,6 +25,8 @@ $cmd = $cmdarr[1] ?? 'error';
 switch ($cmd) {
     case "poll":
         return genPoll();
+    case "screenshot":
+        return getScreenshot();
     default:
         print "Dunno $cmd\n";
 }
@@ -30,4 +35,10 @@ function genPoll()
 {
     $p = new MainPage();
     return $p->respond();
+}
+
+function getScreenshot()
+{
+    $c = new Screenshot();
+    return $c->respond();
 }

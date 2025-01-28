@@ -2,6 +2,7 @@
 
 namespace PhoneBocx\WebUI;
 
+use PhoneBocx\WebUI\DebugTools\ConsolePng;
 use PhoneBocx\WebUI\DebugTools\DebugInterface;
 use PhoneBocx\WebUI\DebugTools\DelOldSiteconf;
 use PhoneBocx\WebUI\DebugTools\RebootDevice;
@@ -9,6 +10,7 @@ use PhoneBocx\WebUI\DebugTools\RebootDevice;
 class DebugTools
 {
     public static array $tools = [
+        "console" => ["name" => "Show Console", "obj" => ConsolePng::class, "id" => "consolerow", "path" => "#console", "onclick" => "updateConsole()", "extra" => "<span id='consoleage'></span>"],
         "reboot" => ["name" => "Reboot Device", "obj" => RebootDevice::class],
         "siteconf" => ["name" => "Cleanup from Upgrade", "obj" => DelOldSiteconf::class],
     ];
@@ -31,19 +33,26 @@ class DebugTools
         return $tool['path'] ?? '?debug=' . $name;
     }
 
-    public static function getToolClassStr(string $name)
+    public static function getToolLinkParams(string $name)
     {
+        $params = "";
         $tool = self::$tools[$name];
         if (!empty($tool['class'])) {
-            return " class='" . $tool['class'] . "'";
+            $params = " class='" . $tool['class'] . "'";
         }
-        return "";
+        if (!empty($tool['id'])) {
+            $params = " id='" . $tool['id'] . "'";
+        }
+        if (!empty($tool['onclick'])) {
+            $params = " onclick='" . $tool['onclick'] . "'";
+        }
+        return $params;
     }
 
     public static function getToolHtml(string $name)
     {
-        $h = "<a href='" . self::getToolPath($name) . "'" . self::getToolClassStr($name) . ">";
-        $h .= self::$tools[$name]['name'] . "</a>";
+        $h = "<a href='" . self::getToolPath($name) . "'" . self::getToolLinkParams($name) . ">";
+        $h .= self::$tools[$name]['name'] . "</a> " . self::$tools[$name]['extra'] ?? "";
         return $h;
     }
 

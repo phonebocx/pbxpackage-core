@@ -8,6 +8,7 @@ use PhoneBocx\WebUI\DebugTools\DebugInterface;
 use PhoneBocx\WebUI\DebugTools\DelOldSiteconf;
 use PhoneBocx\WebUI\DebugTools\GenericCallback;
 use PhoneBocx\WebUI\DebugTools\RebootDevice;
+use PhoneBocx\WebUI\DebugTools\ConsolePng;
 
 include "/usr/local/bin/phpboot.php";
 
@@ -45,6 +46,8 @@ function getCallable(array $tmparr): DebugInterface
             return new RebootDevice($_REQUEST);
         case '/delsiteconf':
             return new DelOldSiteconf($_REQUEST);
+        case '/consolepng':
+            return new ConsolePng($_REQUEST);
         case '/error':
             return new GenericCallback(["Invalid Path"]);
     }

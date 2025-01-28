@@ -1,6 +1,15 @@
 <?php
 
 use PhoneBocx\WebUI\DebugTools;
+use PhoneBocx\WebUI\DebugTools\ConsolePng;
+
+function coredebug_mainhook(&$html)
+{
+  $consolejs =  ConsolePng::getConsoleJavascript();
+  if ($consolejs) {
+    $html['rawscripts']['coredebug'] = $consolejs;
+  }
+}
 
 function coredebug_sidebarname()
 {
@@ -14,10 +23,11 @@ function coredebug_sidebarclasxs()
 
 function coredebug_divcontent()
 {
-  $str = "<p><ul>";
+  $c = ConsolePng::getDebugPageHtml();
+  $str = "$c<p><ul>\n";
   $entries = DebugTools::getToolList();
   foreach ($entries as $name => $row) {
-    $str .= "<li>" . DebugTools::getToolHtml($name);
+    $str .= "<li>" . DebugTools::getToolHtml($name) . "</li>\n";
   }
   $str .= "</ul></p>";
   return $str;

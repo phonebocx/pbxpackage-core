@@ -15,6 +15,7 @@ $html = [
   "body" => [],
   "footer" => [],
   "scripts" => ["/core/js/jquery-3.6.0.min.js"],
+  "rawscripts" => [],
   "end" => ["</html>"],
 ];
 
@@ -74,10 +75,14 @@ if (WebAuth::isLoggedIn()) {
 // print "<p><pre>" . json_encode($includes) . "</pre></p>\n";
 print "<!-- headers -->\n" . implode("\n", $html['headers']) . "\n<!-- end headers -->\n";
 print "<!-- start body -->\n" . implode("\n", $html['body']) . "\n<!-- end body -->\n";
-print "<!-- start footers -->\n" . implode("\n", $html['footer']) . "\n<!-- end footers -->\n</body>\n";
+print "<!-- start footers -->\n" . implode("\n", $html['footer']) . "\n<!-- end footers -->\n";
 print "<!-- start scripts -->\n";
 foreach ($html['scripts'] as $js) {
   print "  <script src='$js'></script>\n";
 }
+foreach ($html['rawscripts'] as $id => $raw) {
+  print "  <script scriptid='$id'>$raw</script>\n";
+}
 print "<!-- end scripts -->\n";
+print "</body>\n";
 print implode("\n", $html['end']) . "\n";

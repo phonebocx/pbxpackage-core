@@ -110,6 +110,10 @@ function parsePollResp(data) {
     $("#devstatus").text("Unavailable");
     genNetInfo(data.networkints);
     genSysInfo(data);
+    if (typeof window.pollhook == "function") {
+        console.log("Called window.pollhook");
+        window.pollhook(data);
+    }
 }
 
 function genSysInfo(data) {

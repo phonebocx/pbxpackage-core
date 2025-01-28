@@ -2,6 +2,7 @@
 <?php
 
 use PhoneBocx\API;
+use PhoneBocx\AsRoot\ConsoleScreenshot;
 use PhoneBocx\AsRoot\RemountConf;
 use PhoneBocx\Dahdi;
 use PhoneBocx\Logs;
@@ -9,6 +10,9 @@ use PhoneBocx\PhoneBocx;
 
 include __DIR__ . "/boot.php";
 
+$z = new ConsoleScreenshot();
+var_dump($z->captureScreenshot());
+exit;
 $c = new RemountConf();
 var_dump($c->isReadWrite());
 var_dump($c->mountRw());
