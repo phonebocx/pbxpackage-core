@@ -76,7 +76,7 @@ function corePoll() {
 }
 
 function parsePollResp(data) {
-    console.log(data);
+    // console.log(data);
     $(".currentver").text(data.runningdist.fullbuild);
     $(".kver").text(data.kernel.kver);
     $(".kbuild").text(data.kernel.kbuild);
@@ -111,7 +111,6 @@ function parsePollResp(data) {
     genNetInfo(data.networkints);
     genSysInfo(data);
     if (typeof window.pollhook == "function") {
-        console.log("Called window.pollhook");
         window.pollhook(data);
     }
 }

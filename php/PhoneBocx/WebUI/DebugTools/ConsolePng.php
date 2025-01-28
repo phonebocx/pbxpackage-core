@@ -46,7 +46,13 @@ class ConsolePng implements DebugInterface
     // Loaded in coredebug_webhook
     public static function getDebugPageHtml(): string
     {
-        $str = "<div id='consolediv'><div id='console'></div></div>\n";
+        $str = "<div id='console'></div>\n";
+        return $str;
+    }
+
+    public static function getLineHtml(): string
+    {
+        $str = "<span id='consolerow' onclick=updateConsole()>Display console screenshot</span> <span class='consoleage'></span>";
         return $str;
     }
 
@@ -57,25 +63,22 @@ class ConsolePng implements DebugInterface
         window.pollhook = function(d) {
           window.consoleneedsrefresh = d.consoleneedsrefresh;
           if (d.consoleage) {
-            s = document.getElementById("consoleage");
-            s.innerHTML=d.consoleage;
+            agespans = document.getElementsByClassName("consoleage");
+            [].forEach.call(agespans, function(s) { s.innerHTML=d.consoleage; });
           }
-          console.log("I was called", d.consoleage, window.consoleneedsrefresh);
         };
         function updateConsole() { 
+          url = "' . self::$pngurl . '";
           if (window.consoleneedsrefresh) {
-            i = "<img id=consolepng src=\'' . self::$pngurl . '&force=true\'>";
-          } else {
-            i = "<img id=consolepng src=\'' . self::$pngurl . '\'>";
+            url = url + "&force=true";
           }
+          html = "<div id=consolediv><p><span class=consoleage></span></p><img id=consolepng onclick=updateConsole() src="+url+"></div>";
           c = document.getElementById("console");
           if (c.innerHTML) {
             // Delete it
             c.innerHTML="";
-            console.log("hidden");
           } else {
-            document.getElementById("console").innerHTML=i;
-            console.log("shown");
+            document.getElementById("console").innerHTML=html;
           }
         }';
         return $js;

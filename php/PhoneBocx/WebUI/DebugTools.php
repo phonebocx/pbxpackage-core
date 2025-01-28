@@ -10,7 +10,7 @@ use PhoneBocx\WebUI\DebugTools\RebootDevice;
 class DebugTools
 {
     public static array $tools = [
-        "console" => ["name" => "Show Console", "obj" => ConsolePng::class, "id" => "consolerow", "path" => "#console", "onclick" => "updateConsole()", "extra" => "<span id='consoleage'></span>"],
+        "console" => ["name" => "Show Console", "obj" => ConsolePng::class, "htmlfromobj" => true],
         "reboot" => ["name" => "Reboot Device", "obj" => RebootDevice::class],
         "siteconf" => ["name" => "Cleanup from Upgrade", "obj" => DelOldSiteconf::class],
     ];
@@ -51,6 +51,10 @@ class DebugTools
 
     public static function getToolHtml(string $name)
     {
+        if (!empty(self::$tools[$name]['htmlfromobj'])) {
+            $obj = self::$tools[$name]['obj'];
+            return $obj::getLineHtml();
+        }
         $h = "<a href='" . self::getToolPath($name) . "'" . self::getToolLinkParams($name) . ">";
         $h .= self::$tools[$name]['name'] . "</a> " . self::$tools[$name]['extra'] ?? "";
         return $h;

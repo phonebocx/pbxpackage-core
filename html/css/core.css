@@ -16,6 +16,16 @@ tt.larger {
     font-style: italic;
 }
 
-#consoleloader {
+#consolepng {
     cursor: pointer;
+}
+
+#consolerow {
+    color: #0d6efd;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+#consolerow:hover {
+    color: #0a58ca;
 }
