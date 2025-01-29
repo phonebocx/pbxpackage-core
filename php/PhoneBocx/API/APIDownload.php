@@ -51,6 +51,9 @@ class APIDownload
         // No change
         return;
       }
+      // Make sure we delete it before writing to it, just in case
+      // symlink/hardlink shenanigans are happening somehow.
+      @unlink($path);
       $bytes = file_put_contents($path, $body);
       // Logs::addLogEntry("Updated $path, wrote $bytes bytes", "System");
       // Logs::addLogEntry("$path hash was '$currenthash', is now '$bodyhash'", "System");
