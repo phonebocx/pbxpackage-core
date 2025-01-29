@@ -56,6 +56,7 @@ class Logs
         $c = $dbh->query('select count(1) from logs');
         $res = $c->fetchAll(\PDO::FETCH_ASSOC);
         var_dump($res);
+        throw new \Exception("Prune unimplemented");
     }
 
     public static function createLogDb(\PDO $dbh)
@@ -66,7 +67,7 @@ class Logs
             'create index lindex on logs(t)'
         ];
         foreach ($q as $sql) {
-            print "Running $sql\n";
+            // print "Running $sql\n";
             $dbh->query($sql);
         }
     }

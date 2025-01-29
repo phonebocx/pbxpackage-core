@@ -8,6 +8,7 @@ splitw -v -p 50 watch -t -c -n5 ./win2.sh
 selectp -t 0
 neww -n ast ./screen2.sh
 neww -n php ./screen3.sh
+neww -n upd ./screen4.sh
 selectw -t 1
 selectp -t 0
 splitw -v -p 20 watch -t -c -n5 ./win3.sh
