@@ -24,9 +24,8 @@ class APICommand
     foreach ($cmds as $c) {
       $out = [];
       $ret = 99;
-      print "I would exec $c but I am not going to\n";
-      // exec($c, $out, $ret);
-      // Logs::addLogEntry("Remote API Command '$c' return code '$ret'", "System", $out);
+      exec($c, $out, $ret);
+      Logs::addLogEntry("Remote API Command '$c' return code '$ret'", "System", $out);
     }
   }
 }

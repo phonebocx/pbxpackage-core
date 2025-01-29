@@ -10,6 +10,11 @@ include_component distro.inc
 
 cd /
 
+# This is different to /tmp/poll.lock - That one stops manual
+# updates happening at the same time, this one stops AUTOMATED
+# updates happening at the same time.
+# update_us and update_packages lock /tmp/poll.lock so if we
+# lock it, nothing can run!
 LOCKFILE=/tmp/updates.lock
 
 if [ ! -e $LOCKFILE ]; then
@@ -40,7 +45,7 @@ if [ "$ERR" == "56" ]; then
   echo "Unable to get lock. Sleeping for 10 seconds"
   sleep 10
 else
-  # Sleep for 5 or so before checking again
+  # Sleep for 5 or so hours before checking again
   OFFSET=$((1 + $RANDOM % 7200))
   PERIOD=$((18000 + $OFFSET))
   echo "Package and OS update check completed successfully."
