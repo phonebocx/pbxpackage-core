@@ -56,7 +56,8 @@ class DebugTools
             return $obj::getLineHtml();
         }
         $h = "<a href='" . self::getToolPath($name) . "'" . self::getToolLinkParams($name) . ">";
-        $h .= self::$tools[$name]['name'] . "</a> " . self::$tools[$name]['extra'] ?? "";
+        $extra = self::$tools[$name]['extra'] ?? "";
+        $h .= self::$tools[$name]['name'] . "</a> $extra";
         return $h;
     }
 

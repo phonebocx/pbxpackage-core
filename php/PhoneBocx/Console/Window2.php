@@ -2,6 +2,11 @@
 
 namespace PhoneBocx\Console;
 
+/**
+ * Note for Rob:
+ * 
+ * This is clobbered by Console hooks in fax.
+ */
 class Window2
 {
     public static function trigger(): string
