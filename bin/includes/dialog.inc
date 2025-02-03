@@ -86,9 +86,22 @@ ask_yesno() {
   if [ "$4" ]; then
     timeout="--timeout $4"
   fi
-
   dialog --clear --backtitle "$buildvers" --title "$t" $DSHADOW \
     $defaultno $timeout --yesno "$b" $height $width
+  exitcode=$?
+  # If it timed out, it returns 255, which is the same as pushing escape
+  # So if our return code is 255, AND timeout is set, exit with whatever
+  # our default is
+  if [ "$exitcode" == 255 ]; then
+    if [ "$defaultno" ]; then
+      return 1
+    else
+      return 0
+    fi
+  else
+    return $exitcode
+  fi
+
 }
 
 infobox() {

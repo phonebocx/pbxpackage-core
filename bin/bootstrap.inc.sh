@@ -62,6 +62,17 @@ UTILPHP="$PHPBIN/util.php"
 
 [ ! "$buildvers" ] && buildvers="$shortname $buildver"
 
+# Add a suffix of Development or Factory to the window title (top left
+# hand of the dialog page) if CDIR is dev or factory
+if [ "$CDIR" == "/pbxdev/core" ]; then
+  titlesuffix=" (Development)"
+elif [ "$CDIR" == "/factory/core" ]; then
+  titlesuffix=" (Factory)"
+else
+  titlesuffix=""
+fi
+buildvers="$buildvers$titlesuffix"
+
 if [ ! -d $LOGDIR ]; then
   mkdir -p $LOGDIR
   chmod 777 $LOGDIR

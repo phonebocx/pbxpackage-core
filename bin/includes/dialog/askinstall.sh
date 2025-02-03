@@ -8,7 +8,8 @@ ask_to_install() {
       run_led slow
       sync
       sgdisk --zap-all /dev/mmcblk1 >/dev/null 2>&1
-      blkdiscard /dev/mmcblk1 >/dev/null 2>&1
+      partprobe
+      blkdiscard -f /dev/mmcblk1 >/dev/null 2>&1
       echo 3 >/proc/sys/vm/drop_caches
       partprobe
       dialog_install
@@ -24,7 +25,8 @@ ask_to_install() {
   if ask_yesno "Install Required" "\nThis machine does not have a valid installation\n\nWould you like to install $brandname now?\n" "" $timeout; then
     dialog_install
   else
-    echo "Nope"
+    echo "Not installing"
+    sleep 5
   fi
 }
 
@@ -57,9 +59,6 @@ dialog_install() {
   siteconf_checks
   unmount_rw_conf_partition
   if grep -q 'wipeall' /proc/cmdline; then
-    echo Not rebooting from wipeall
-    sleep 5
-    exit
     reboot
   fi
   if ask_yesno "Reboot now?" "\nYou should now reboot into $brandname.\n\nWould you like to reboot now?"; then
