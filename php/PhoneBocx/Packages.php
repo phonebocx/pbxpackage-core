@@ -4,7 +4,6 @@ namespace PhoneBocx;
 
 class Packages
 {
-    private static $pkgurl = "/repo/packages.php";
     private static ?array $localpkgs = null;
     public static $update = false;
     public static $short = true;
@@ -14,9 +13,8 @@ class Packages
     public static function getFullPkgUrl(): string
     {
         $build = PhoneBocx::create()->getKey('os_build', 'unknown');
-        // Override for the moment
-        // $baseurl = FileLocations::getBaseUrl();
-        $baseurl = "http://packages.sendfax.to/packages.php";
+        $dv = DistroVersion::getDistroVars();
+        $baseurl = $dv['pbkurl'];
         return $baseurl . "?os_build=$build";
     }
 

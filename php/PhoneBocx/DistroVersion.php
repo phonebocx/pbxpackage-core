@@ -23,6 +23,35 @@ class DistroVersion
         "packages" => [],
     ];
 
+    private static array $distrovars = [
+        "kernelver" => "2.4.24", // This is used to see if it needs to be reloaded
+        "buildver" => "2021.01-001",
+        "distroname" =>  "NoDistroVars",
+        "shortname" => "UnknownDistro",
+        "apiurl" => "https://example.com",
+        "baseurl" => "https://example.com",
+        "brandname" => "NoBrandName PhoneBo.cx",
+        "disturl" => "https://example.com/nlatest",
+        "latestiso" => "https://example.com/latest.iso",
+        "pkgurl" => "http://phonebo.cx/packages",
+        "buildutime" => 1700000000,
+        "timestamp" => "Tue Nov 14 10:13:20 PM UTC 2023",
+    ];
+
+    public static function getDistroVars(bool $refresh = false, string $filename = "/distro/distrovars.json"): array
+    {
+        $retarr = self::$distrovars;
+        if ($retarr['kernelver'] === "2.4.24" || $refresh) {
+            if (file_exists($filename)) {
+                $j = json_decode(file_get_contents($filename), true);
+                foreach ($j as $k => $v) {
+                    $retarr[$k] = $v;
+                }
+            }
+        }
+        return $retarr;
+    }
+
     public static function getJson(bool $refresh = false): array
     {
         if (self::$djson === null || $refresh) {
@@ -45,9 +74,11 @@ class DistroVersion
     {
         if (self::$shortname === null) {
             if (!file_exists("/distro/shortname")) {
-                return "Generic";
+                $dv = self::getDistroVars();
+                self::$shortname = $dv['shortname'] ?? "Generic";
+            } else {
+                self::$shortname = trim(file_get_contents("/distro/shortname"));
             }
-            self::$shortname = trim(file_get_contents("/distro/shortname"));
         }
         return self::$shortname;
     }
