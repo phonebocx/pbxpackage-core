@@ -13,7 +13,7 @@ class Packages
     public static function getFullPkgUrl(): string
     {
         $build = PhoneBocx::create()->getKey('os_build', 'unknown');
-        $dv = DistroVersion::getDistroVars();
+        $dv = DistroVars::getDistroVars();
         $baseurl = $dv['pkgurl'] ?? "http://packages.phonebo.cx/packages.php";
         return $baseurl . "?os_build=$build";
     }

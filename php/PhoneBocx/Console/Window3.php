@@ -3,14 +3,14 @@
 namespace PhoneBocx\Console;
 
 use PhoneBocx\Console;
-use PhoneBocx\DistroVersion;
+use PhoneBocx\DistroVars;
 use PhoneBocx\PhoneBocx;
 
 class Window3
 {
     public static function trigger(): string
     {
-        $name = DistroVersion::getShortname();
+        $name = DistroVars::getShortname();
         // This is \DATE_RFC822 with 'UTC' instead of '+0000'
         $human = 'D M d, H:i:s T Y';
         $s = (new \DateTime())->format($human);

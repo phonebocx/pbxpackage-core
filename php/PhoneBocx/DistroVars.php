@@ -2,8 +2,14 @@
 
 namespace PhoneBocx;
 
-class DistroVersion
+class DistroVars
 {
+    private static array $urldefaults = [
+        'baseurl' => "http://repo.phonebo.cx",
+        'disturl' => "http://goldlinux.com",
+        "latestiso" => "https://dist.phonebo.cx/latest.iso",
+    ];
+
     private static ?string $shortname = null;
     private static ?array $djson = null;
     private static array $defaults = [
@@ -81,5 +87,29 @@ class DistroVersion
             }
         }
         return self::$shortname;
+    }
+
+    public static function getBaseUrl(): string
+    {
+        return self::getDistVarsURL('baseurl', self::$urldefaults['baseurl']);
+    }
+
+    public static function getDistUrl(): string
+    {
+        return self::getDistVarsURL('disturl', self::$urldefaults['disturl']);
+    }
+
+    public static function getLatestIsoUrl(): string
+    {
+        return self::getDistVarsURL('latestiso', self::$urldefaults['latestiso']);
+    }
+
+    private static function getDistVarsURL(string $varname, string $default): string
+    {
+        $url = self::getDistroVars()[$varname];
+        if (strpos($url, 'example.com') !== false) {
+            return $default;
+        }
+        return $url;
     }
 }

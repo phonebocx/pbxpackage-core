@@ -113,7 +113,7 @@ class CoreInfo
         return $retarr;
     }
 
-    public static function getLatestUrl()
+    public static function getLatestUrl(): string
     {
         $settings = self::getSettings();
         $params = [
@@ -124,7 +124,8 @@ class CoreInfo
             "devmode" => $settings['devmode'] ?? null,
             "osversion" => "v3",
         ];
-        return FileLocations::getDistUrl() . "/nlatest?" . http_build_query($params);
+        $isourl = DistroVars::getDistUrl() . "?" . http_build_query($params);
+        return $isourl;
     }
 
     public static function getLatestDist($refresh = false)
