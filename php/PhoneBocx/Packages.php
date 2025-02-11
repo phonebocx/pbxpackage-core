@@ -14,7 +14,7 @@ class Packages
     {
         $build = PhoneBocx::create()->getKey('os_build', 'unknown');
         $dv = DistroVersion::getDistroVars();
-        $baseurl = $dv['pbkurl'];
+        $baseurl = $dv['pkgurl'] ?? "http://packages.phonebo.cx/packages.php";
         return $baseurl . "?os_build=$build";
     }
 
