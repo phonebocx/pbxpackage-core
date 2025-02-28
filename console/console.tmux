@@ -1,5 +1,5 @@
 set -g status off
-set-window-option -g window-size smallest
+set-window-option -g window-size latest
 unbind C-b
 set-option -g prefix C-a
 neww -n core -t 1 ./win0.sh
