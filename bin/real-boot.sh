@@ -55,3 +55,9 @@ if [ "$HOSTNAME" ]; then
 else
   set_system_hostname unconf
 fi
+
+# Update /root/.ssh/authorized_keys from ISO defaults
+# and any packages added.
+include_component boot/update_ssh_keys.inc
+
+update_ssh_keys
