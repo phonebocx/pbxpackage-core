@@ -19,8 +19,34 @@ update_ssh_keys() {
         keyfile="$pdir/meta/authorized_keys"
         if [ -s "$keyfile" ]; then
             echo "# Contents of $keyfile below" >>$authfile
-            cat "$keyfile" >>$authfile
+            # Remove empty lines in the authkeys file
+            grep -v '^$' "$keyfile" >>$authfile
             echo -e "\n# End of $keyfile\n" >>$authfile
         fi
     done
+
+    # There's probably no way that this could ever NOT work, but, it's
+    # better to be safe than try to figure out how to repair a million
+    # devices that have glitched somehow
+
+    # 1. Make sure authfile is not empty. If it is, don't do anything
+    if [ ! -s $authfile ]; then
+        echo "Somehow $authfile didn't exist, or is empty"
+        return
+    fi
+    # 2. Double check it has at least one ssh key
+    if ! grep -q '^ssh' $authfile; then
+        echo "Could not find a ssh key in $authfile"
+        return
+    fi
+
+    # We should be fine now.
+    mkdir -p /root/.ssh
+    rm -f /root/.ssh/authorized_keys.old
+    # There always should be one, but maybe not?
+    if [ ! -e /root/.ssh/authorized_keys ]; then
+        touch /root/.ssh/authorized_keys
+    fi
+    mv /root/.ssh/authorized_keys /root/.ssh/authorized_keys.old
+    cp $authfile /root/.ssh/authorized_keys
 }
