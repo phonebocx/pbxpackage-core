@@ -19,14 +19,22 @@ include_component crypto.inc
 
 [ ! "$UUID" ] && UUID=/sys/class/dmi/id/product_uuid
 rm -f /var/run/crypto.key
-[ -e $UUID ] && grep -v "^12345678-" $UUID >/var/run/crypto.key
+[ -e $UUID ] && cat $UUID >/var/run/crypto.key
+
+# If this device doesn't have a crypto key, use a generic one.
 if [ ! -s /var/run/crypto.key ]; then
   echo 36e26dd9-91a0-4547-b197-bf28ce57cfe9 >/var/run/crypto.key
 fi
-sdev=$(find_partlabel_dev spool)
-if [ "$sdev" ]; then
-  mount_cryptovol spool /var/run/crypto.key
-  rm -f /var/run/crypto.key
+# 12345678-1234-5678-901b-cddeefaabbcc is a known bad UUID. Don't
+# try to use it.
+if grep -q '^12345678' /var/run/crypto.key; then
+  echo "Invalid system crypto key, can not create/mount spool"
+else
+  sdev=$(find_partlabel_dev spool)
+  if [ "$sdev" ]; then
+    mount_cryptovol spool /var/run/crypto.key
+    rm -f /var/run/crypto.key
+  fi
 fi
 
 # If /spool is mounted, make sure /spool/data exists
