@@ -2,8 +2,6 @@
 
 namespace PhoneBocx\Services;
 
-use PhoneBocx\Log;
-use PhoneBocx\Logs;
 use PhoneBocx\PhoneBocx;
 
 class JobSystemdService
@@ -11,17 +9,24 @@ class JobSystemdService
     private PhoneBocx $pbx;
     private bool $debug = false;
 
-    public static function launch(string $param = "")
+    public static function launch(string $param, array $argv = [])
     {
-        $jobrunner = new JobSystemdService($param);
+        $jobrunner = new JobSystemdService($param, $argv);
         $jobrunner->go();
     }
 
-    public function __construct(string $param = "")
+    public function __construct(string $param = "", array $argv = [])
     {
         $this->pbx = PhoneBocx::create();
         if ($param == "debug") {
             $this->debug = true;
+        } else {
+            foreach ($argv as $k) {
+                if (strpos($k, "debug") !== false) {
+                    $this->debug = true;
+                    break;
+                }
+            }
         }
     }
 

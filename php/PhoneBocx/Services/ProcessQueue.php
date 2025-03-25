@@ -20,7 +20,13 @@ class ProcessQueue extends ServiceAbstraction implements ServiceInterface
     public function launch(array &$retarr): bool
     {
         $retarr[] = "Process Queue worker doing the needful";
-        $q = Queue::create();
+        try {
+            $q = Queue::create();
+        } catch (\Exception $e) {
+            $retarr[] = "Queue Worker failed: Error '" . $e->getMessage() . "'";
+            return false;
+        }
+
         $c = $q->count();
         if ($c) {
             $retarr[] = "There are $c jobs in the queue";

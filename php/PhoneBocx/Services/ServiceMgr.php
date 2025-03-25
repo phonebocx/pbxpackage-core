@@ -141,7 +141,7 @@ class ServiceMgr
         $retarr[] = "Debug  " . json_encode($t->getDebugArray());
         $class = $t->getServiceClass();
         if (!$class->launch($retarr)) {
-            $retarr[] = "launch() failed!!!";
+            $retarr[] = "launch() failed";
             $this->setTaskFailed($t);
         } else {
             $this->setTaskCompleted($t);
