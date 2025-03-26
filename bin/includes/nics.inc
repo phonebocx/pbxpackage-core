@@ -1,12 +1,10 @@
 #!/bin/bash
 
 get_link_stats() {
-  for l in $(ip -o link | awk '/eth.:/ { print $2,$3 }' | sed -e 's/[<>]//g' -e 's/: /=/'); do
-    n=${l%%=*}
-    if [[ "$l" == *NO-CARRIER* ]]; then
-      echo -n "$n: Down "
-    else
-      echo -n "$n: Up   "
+  for nic in $(ls /sys/class/net); do
+    if [[ "$nic" == eth* ]]; then
+      padded=$(printf "%-5s" $(cat /sys/class/net/$nic/operstate))
+      echo -n "$nic: ${padded^} "
     fi
   done
   echo ""
