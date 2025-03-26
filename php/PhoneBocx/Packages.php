@@ -348,7 +348,7 @@ class Packages
 
         // This is so that we don't need to push out a bunch of
         // identical builds just to change the name.
-        return self::getPkgVer($i['remote']);
+        return self::getPkgVer($i['local']);
     }
 
     public static function getPackageDownloadInfo(string $name, bool $refresh = false)
