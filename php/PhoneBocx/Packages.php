@@ -187,6 +187,9 @@ class Packages
             return false;
         }
         $remote = json_decode($json, true);
+        if (empty($remote[$pkgname])) {
+            return false;
+        }
         $pkginfo = self::parsePackageInfo($remote[$pkgname]);
         $array = [$pkginfo['releasename'], $pkginfo['utime'], $pkginfo['modified']];
         if ($asarray) {
