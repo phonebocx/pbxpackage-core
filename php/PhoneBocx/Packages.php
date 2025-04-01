@@ -182,15 +182,15 @@ class Packages
 
     public static function remotePkgInfo($pkgname, $asarray = false)
     {
+        // Default values if we can't find it remotely
+        $pkginfo = ["releasename" => "00000000", "utime" => "0", "modified" => "false", "dev" => "false"];
         $json = self::getCurrentJson();
-        if (!$json) {
-            return false;
+        if ($json) {
+            $remote = json_decode($json, true);
+            if (!empty($remote[$pkgname])) {
+                $pkginfo = self::parsePackageInfo($remote[$pkgname]);
+            }
         }
-        $remote = json_decode($json, true);
-        if (empty($remote[$pkgname])) {
-            return false;
-        }
-        $pkginfo = self::parsePackageInfo($remote[$pkgname]);
         $array = [$pkginfo['releasename'], $pkginfo['utime'], $pkginfo['modified']];
         if ($asarray) {
             $array[] = $pkginfo['dev'];
@@ -232,7 +232,7 @@ class Packages
         }
 
         // If it doesn't exist remotely, no.
-        if ($remotever == "00000000-0-true") {
+        if ($remotever == "00000000-0-false") {
             return false;
         };
 
