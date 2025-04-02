@@ -345,8 +345,9 @@ class Packages
         $pkgver = self::getPkgVer($i['local']);
         $suffix = "";
         if (!$i['remote']) {
-            // empty() == does not exist or is false
-            if (empty($i['local']['noremote'])) {
+            // [ hash, utime, modified, dev, noremote ]
+            $noremote = $i['local'][4] ?? false;
+            if (!$noremote) {
                 $suffix = "(Unavail)";
             }
         } elseif (self::doesPkgNeedUpdate($name)) {
