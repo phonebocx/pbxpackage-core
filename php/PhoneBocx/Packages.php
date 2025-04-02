@@ -209,9 +209,11 @@ class Packages
             $p = json_decode(file_get_contents($infofile), true);
         }
         $pkginfo = self::parsePackageInfo($p);
+        $pkginfo['noremote'] = file_exists("$pkgdir/meta/noremote");
         $array = [$pkginfo['releasename'], $pkginfo['utime'], $pkginfo['modified']];
         if ($asarray) {
             $array[] = $pkginfo['dev'];
+            $array[] = $pkginfo['noremote'];
             return $array;
         }
         return join("-", $array);
@@ -340,18 +342,17 @@ class Packages
         if (!$i['local']) {
             return self::getPkgVer($i['remote']) . " (New)";
         }
+        $pkgver = self::getPkgVer($i['local']);
+        $suffix = "";
         if (!$i['remote']) {
-            return self::getPkgVer($i['local']) . " (Unavail)";
+            // empty() == does not exist or is false
+            if (empty($i['local']['noremote'])) {
+                $suffix = "(Unavail)";
+            }
+        } elseif (self::doesPkgNeedUpdate($name)) {
+            $suffix = "(Update)";
         }
-        if (self::doesPkgNeedUpdate($name)) {
-            return self::getPkgVer($i['local']) . " (Update)";
-        }
-        // Note this means that if a dev version is installed, and it
-        // is just tagged as a release, the release name will be displayed.
-
-        // This is so that we don't need to push out a bunch of
-        // identical builds just to change the name.
-        return self::getPkgVer($i['local']);
+        return "$pkgver $suffix";
     }
 
     public static function getPackageDownloadInfo(string $name, bool $refresh = false)
