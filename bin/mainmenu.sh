@@ -26,6 +26,7 @@ find $LOGDIR -type f -mtime +2 -delete
 
 while :; do
   if ! is_phonebocx_installed; then
+    # This is in includes/dialog/askinstall.sh
     ask_to_install
   fi
   assocoptions=(
@@ -39,6 +40,7 @@ while :; do
   assocfunctions=(
     [01check]="update_packages"
     [10update]="remote_update"
+    # install/grub-tools
     [12grub]="force_reinstall_grub"
     [15persist]="update_persistence"
     [19zap]="force_zap"
@@ -47,6 +49,7 @@ while :; do
   )
 
   if [ -e /tmp/devel ]; then
+    assocoptions[01deb]="Bash menu logs"
     assocoptions[11devel]="Disable Debug mode"
     assocoptions[12grub]="Reinstall bootloader"
     assocoptions[15persist]="Persistence"
@@ -82,6 +85,12 @@ while :; do
     $callfunc
   else
     case ${choice} in
+    "01deb")
+      tput clear
+      echo "Last 10 lines of $LOGFILE:"
+      tail -10 $LOGFILE
+      sleep 20
+      ;;
     "11devel")
       [ -e /tmp/devel ] && rm -f /tmp/devel || touch /tmp/devel
       ;;

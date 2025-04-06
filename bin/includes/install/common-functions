@@ -54,7 +54,8 @@ find_usable_storage() {
   DEVICES=()
   POTENTIAL=$(ls /sys/block | grep -E '^(nvme.|[hsv]d.|mmcblk.)$')
   for drive in $POTENTIAL; do
-    if [ $(cat /sys/block/$drive/size) -eq 0 ]; then
+    # If it's tiny, don't even ask. This is 2MB.
+    if [ $(cat /sys/block/$drive/size) -lt 4096 ]; then
       continue
     fi
     if [ $(cat /sys/block/$drive/ro) -eq 0 ]; then

@@ -9,12 +9,7 @@ include_component nics.inc
 # Refresh screen on console in case kernel junk ended up there
 tmux refresh-client -t /dev/tty1 2>/dev/null
 
-sysid=$(get_sysinfo_val systemid)
-if [ ! "$sysid" ]; then
-  echo -e "ClearlyIP Fax Device - NO SYSTEM ID (Serial No $(cat /sys/class/dmi/id/product_serial))"
-else
-  echo -e "ClearlyIP Fax Device - System ID $sysid (Serial No $(cat /sys/class/dmi/id/product_serial))"
-fi
+util --winheader=win1
 
 # get_watchdog_status
 cat /etc/motd

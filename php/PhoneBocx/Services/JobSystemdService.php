@@ -28,6 +28,10 @@ class JobSystemdService
                 }
             }
         }
+        // This is created when selecting 'enable debug mode' in the text console
+        if (file_exists("/tmp/devel")) {
+            $this->debug = true;
+        }
     }
 
     public function getTimeStr()

@@ -3,6 +3,7 @@
 namespace PhoneBocx;
 
 use PhoneBocx\Commands\QueueUtils;
+use PhoneBocx\Console\WindowHeader;
 use PhoneBocx\Services\JobSystemdService;
 
 class Commands
@@ -106,6 +107,12 @@ class Commands
                 "callable" => QueueUtils::class . "::getSummary",
                 "print" => true,
             ],
+            "winheader" => [
+                "help" => "Display the header for a window",
+                "callable" => self::class . "::getWindowHeader",
+                "example" => "--winheader=win1",
+                "print" => true,
+            ]
         ];
         // Important: Pass by ref!
         $params = ["commands" => &$commands];
@@ -292,5 +299,22 @@ class Commands
             return "Hash mismatch: " . json_encode([$shouldbe, $localhash]);
         }
         return "";
+    }
+
+    public static function getWindowHeader(string $win, array $params)
+    {
+        $window = $win;
+        $params["processdefault"] = true;
+        $params["sysidrequired"] = DistroVars::isSysIdRequired();
+        $hookfunc = "windowheader-$window";
+        // If something has registered a hook, trigger it. It can then
+        // set 'processdefault' to false if it has already output what
+        // it needed to output.
+        $x = PhoneBocx::create()->triggerHook($hookfunc, ["params" => $params]);
+        $params = $x['__model']->params;
+        if ($params["processdefault"]) {
+            $wh = new WindowHeader($win, $params);
+            print $wh->go();
+        }
     }
 }

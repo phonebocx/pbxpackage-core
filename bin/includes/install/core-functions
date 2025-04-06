@@ -12,11 +12,6 @@ create_partitions() {
     exit 1
   fi
 
-  if [ ! -e /sys/firmware/efi ]; then
-    echo "This is not an EFI machine. Can not continue."
-    exit 1
-  fi
-
   # Figure out what the devices should be
   if [[ "$drive" =~ (cciss|mmc|nvme) ]]; then
     DEV="/dev/${drive}"
@@ -43,6 +38,7 @@ create_partitions() {
   # Unfortunately, the previous installer only created this
   # as a 1G partition. This makes migration painful.
   create_if_needed "Recovery" $DEV 3 recovery "+2G"
+  # This contains /boot
   create_if_needed "Config" $DEV 4 conf "+10G"
   create_if_needed "Spool" $DEV 5 $SPOOLLABEL "0"
 

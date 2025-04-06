@@ -34,14 +34,15 @@ class DistroVars
         "buildver" => "2021.01-001",
         "distroname" =>  "NoDistroVars",
         "shortname" => "UnknownDistro",
-        "apiurl" => "https://example.com",
-        "baseurl" => "https://example.com",
-        "brandname" => "NoBrandName PhoneBo.cx",
-        "disturl" => "https://example.com/nlatest",
-        "latestiso" => "https://example.com/latest.iso",
-        "pkgurl" => "http://phonebo.cx/packages",
+        "apiurl" => "https://api.phonebo.cx/api",
+        "baseurl" => "https://base.phonebo.cx/base",
+        "brandname" => "Default PhoneBo.cx",
+        "disturl" => "https://dist.phonebo.cx/disturl",
+        "latestiso" => "https://iso.phonebo.cx/latest.iso",
+        "pkgurl" => "http://p.phonebo.cx/packages",
         "buildutime" => 1700000000,
         "timestamp" => "Tue Nov 14 10:13:20 PM UTC 2023",
+        "sysidrequired" => false, // Don't display a warning about no systemid by default
     ];
 
     public static function getDistroVars(bool $refresh = false, string $filename = "/distro/distrovars.json"): array
@@ -87,6 +88,14 @@ class DistroVars
             }
         }
         return self::$shortname;
+    }
+
+    // This will display a warning in window1 if there is no sysid set
+    // on this instance.
+    public static function isSysIdRequired(): bool
+    {
+        $def = self::getDistroVars()['sysidrequired'] ?? true;
+        return (bool) $def;
     }
 
     public static function getBaseUrl(): string

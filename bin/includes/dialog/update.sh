@@ -131,6 +131,8 @@ update_from_folder() {
 
   grep -q " $SRC_ROOT " /proc/mounts && umount $SRC_ROOT
   if [ ! "$FATAL" -a ! -e /tmp/devel ]; then
+    wall 'Rebooting due to update'
+    sleep 5
     reboot
   fi
 }

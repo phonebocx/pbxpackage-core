@@ -64,7 +64,11 @@ if [ -d /pbx/core/filesystem ]; then
     grep -q skipfs /proc/cmdline && rsync -av /pbx/core/filesystem/ /
 fi
 
-scfix=/root/pbx/core/bin/siteconf.sh
-if [ -x $scfix ]; then
-    $scfix
+# If siteconf hasn't been fixed yet, try to fix it.
+if ! grep -q scfixed /proc/cmdline; then
+    scfix=/root/pbx/core/bin/siteconf.sh
+    if [ -x $scfix ]; then
+        $scfix
+    fi
 fi
+echo "Done"

@@ -38,6 +38,7 @@ dialog_install() {
     fi
   fi
   if [ ! "$destdevice" ]; then
+    # This is in install/common-functions
     ask_about_storage
   fi
   if [ ! "$destdevice" ]; then
@@ -55,7 +56,8 @@ dialog_install() {
   tput clear
   DRIVE=$destdevice
   do_install
-  install_grub
+  # destdevice is used with non-uefi devices
+  install_grub $destdevice
   siteconf_checks
   unmount_rw_conf_partition
   if grep -q 'wipeall' /proc/cmdline; then

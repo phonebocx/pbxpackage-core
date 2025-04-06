@@ -84,14 +84,14 @@ class CoreInfo
         return $json[$intname] ?? [];
     }
 
-    public static function getSerialNo()
+    public static function getSerialNo(string $nofile = "SN-ERROR-DMI", string $unreadable = "SN-ERROR-UNREADABLE")
     {
         $sn = "/sys/class/dmi/id/product_serial";
         if (!file_exists($sn)) {
-            return "SN-ERROR-DMI";
+            return $nofile;
         }
         if (!is_readable($sn)) {
-            return "SN-ERROR-UNREADABLE";
+            return $unreadable;
         }
         return trim(file_get_contents($sn));
     }

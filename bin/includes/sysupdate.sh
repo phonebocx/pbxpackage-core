@@ -126,6 +126,8 @@ auto_update_from_folder() {
 
   grep -q " $SRC_ROOT " /proc/mounts && umount $SRC_ROOT
   if [ ! "$FATAL" -a ! -e /tmp/devel ]; then
-    /usr/sbin/reboot
+    wall 'Rebooting in sysupdate'
+    sleep 10
+    /sbin/reboot
   fi
 }

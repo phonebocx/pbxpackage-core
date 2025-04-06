@@ -12,6 +12,8 @@ class PhoneBocx
     private static $me = false;
     private static ?string $basedir = null;
 
+    public static $debugcurl = false;
+
     private $dbfile;
     private $dbh;
     private array $phphooks;
@@ -181,6 +183,13 @@ class PhoneBocx
         $client = new Client(["allow_redirects" => true]);
         $f = tempnam(dirname($dest), basename($dest));
         $params = ["sink" => $f];
+        // This is created when selecting 'enable debug mode' in the text console
+        if (file_exists("/tmp/devel")) {
+            self::$debugcurl = true;
+        }
+        if (self::$debugcurl) {
+            $params["debug"] = "true";
+        }
         try {
             $client->request('GET', $url, $params);
         } catch (\Exception $e) {

@@ -3,6 +3,57 @@
 declare -a allvers
 
 install_grub() {
+  if [ -e /sys/firmware/efi ]; then
+    install_grub_efi
+  else
+    # $1 is destdevice from dialog/askinstall.sh
+    install_grub_bios $1
+  fi
+}
+
+install_grub_bios() {
+  local destdevice
+  destdevice=/dev/$1
+  GRUBNAME=$(get_grub_name | tr -d ' ')
+  cmd="grub-install --no-floppy --recheck --target=i386-pc --force-extra-removable --root-directory=${WR_CONF} --bootloader-id='${GRUBNAME}' $destdevice"
+  echo -n "Installing BIOS Grub to $destdevice:  "
+  progress_indicator start
+  OUT=$($cmd 2>&1)
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    progress_indicator stop
+    echo -e "\n** Failure Running grub-install **"
+    echo "  Ran: $cmd"
+    echo "  Result: $OUT"
+    sleep 60
+    exit 1
+  fi
+  progress_indicator stop
+  echo " Done"
+  update_grub_files
+  generate_grub_cfg "$WR_CONF/boot/grub"
+}
+
+# This is here if needed to REALLY REALLY make things bootable.
+# It is currently not used.
+make_bootable() {
+  local device hybridmbr
+  device=/dev/$1
+  if [ ! -b $device ]; then
+    echo -e "\n\n*** Error - $device is not a block device, can not make bootable ***\n\n"
+    sleep 30
+    return
+  fi
+  # Ask fdisk to print the hybrid MBR
+  hybridmbr=$(echo -e 'M\np\n' | fdisk $device 2>/dev/null | egrep '\s+\*\s+1')
+  # If it's empty it is NOT bootable
+  if [ ! "$hybridmbr" ]; then
+    echo " *** HybridMBR not bootable on $device, activating"
+    echo -e 'M\na\nw\n' | fdisk $device >/dev/null
+  fi
+}
+
+install_grub_efi() {
   mount_efi_partition
   GRUBNAME=$(get_grub_name)
   cmd="grub-install --no-floppy --recheck --target=x86_64-efi --force-extra-removable --root-directory=${WR_CONF} --efi-directory=${EFI_CONF} --bootloader-id=${GRUBNAME} --no-uefi-secure-boot"
@@ -12,7 +63,7 @@ install_grub() {
   status=$?
   if [ "$status" -ne 0 ]; then
     progress_indicator stop
-    echo -n "\n** Failure Running grub-install **"
+    echo -e "\n** Failure Running grub-install **"
     echo "  Ran: $cmd"
     echo "  Result: $OUT"
     exit 1
@@ -85,11 +136,29 @@ install_grub_theme() {
       cp $gfile $DESTDIR/$(basename $gfile)
     done
   done
+  # If this is NOT a UEFI machine, see if any theme files are being
+  # overridden
+  if [ ! -e /sys/firmware/efi ]; then
+    # If there is a file starting with bios-*, remove bios- and
+    # clobber the existing file (if any). This lets you share
+    # all your grub themes, only updating things that are different
+    # between UEFI grub and BIOS grub
+    for d in $tdirs; do
+      for bfile in $d/meta/grub/bios-*; do
+        [ ! -e $bfile ] && continue
+        DESTFILE=$DESTDIR/$(basename $bfile | sed 's/bios-//')
+        cp $bfile $DESTFILE
+      done
+    done
+  fi
 }
 
 check_grub_options() {
-  # Note that boot/%s is a variable used in generate_grub_cfg. It needs to be there.
-  default_grub_opts="boot=live rootdelay=5 noautologin net.ifnames=0 biosdevname=0 live-media-path=boot/%s"
+  # Note that 'boot/%s' is a variable used in generate_grub_cfg. It needs to be there. It is correct.
+  # KNOWN ISSUE: vga=790 is complained about by grub. This should not be needed
+  #VGAMODE="vga=790"
+  VGAMODE=""
+  default_grub_opts="$VGAMODE boot=live rootdelay=5 noautologin net.ifnames=0 biosdevname=0 live-media-path=boot/%s nomodeset"
   default_reset_script=/usr/local/bin/factory_reset
   default_timeout=5
   [ ! "$GRUB_OPTIONS" ] && GRUB_OPTIONS=$default_grub_opts
@@ -108,22 +177,33 @@ generate_grub_cfg() {
     DEFAULT=0
   fi
 
-  sed -e "s/__DEFAULT__/$DEFAULT/" -e "s/__TIMEOUT__/$GRUB_TIMEOUT/" $INCDIR/grub-header.inc >$OUTFILE
+  if [ -e /sys/firmware/efi ]; then
+    # This is a UEFI machine, use the default grub-header
+    HEADERFILE=$INCDIR/grub-header.inc
+  else
+    # It's bios. Use bios-grub-header if it exists.
+    HEADERFILE=$INCDIR/bios-grub-header.inc
+    if [ ! -e $HEADERFILE ]; then
+      HEADERFILE=$INCDIR/grub-header.inc
+    fi
+  fi
+
+  sed -e "s/__DEFAULT__/$DEFAULT/" -e "s/__TIMEOUT__/$GRUB_TIMEOUT/" $HEADERFILE >$OUTFILE
 
   madefr=""
 
   for v in "${allvers[@]}"; do
     echo "menuentry \"$GRUBNAME $v\" {" >>$OUTFILE
-    echo "  linux /boot/$v/vmlinuz $(printf "$GRUB_OPTIONS" $v) nomodeset quiet" >>$OUTFILE
+    echo "  linux /boot/$v/vmlinuz $(printf "$GRUB_OPTIONS" $v) quiet" >>$OUTFILE
     echo "  initrd /boot/$v/initrd.img" >>$OUTFILE
     echo "}" >>$OUTFILE
     echo "menuentry \"$GRUBNAME $v (Debug)\" {" >>$OUTFILE
-    echo "  linux /boot/$v/vmlinuz $(printf "$DEBUG_OPTIONS" $v) nomodeset" >>$OUTFILE
+    echo "  linux /boot/$v/vmlinuz $(printf "$DEBUG_OPTIONS" $v) debug" >>$OUTFILE
     echo "  initrd /boot/$v/initrd.img" >>$OUTFILE
     echo "}" >>$OUTFILE
     if [ ! "$madefr" ]; then
       echo "menuentry \"Factory Reset\" {" >>$OUTFILE
-      echo "  linux /boot/$v/vmlinuz $(printf "$GRUB_OPTIONS" $v) nomodeset nopersistence init=$reset_script" >>$OUTFILE
+      echo "  linux /boot/$v/vmlinuz $(printf "$GRUB_OPTIONS" $v) nopersistence init=$reset_script" >>$OUTFILE
       echo "  initrd /boot/$v/initrd.img" >>$OUTFILE
       echo "}" >>$OUTFILE
       madefr="yes"

@@ -23,9 +23,9 @@ check_redo_siteconf_migration() {
     fi
     rm -f $r
     mount -o remount,ro /run/live/medium
+    wall 'Rebooting again in check_redo_siteconf_migration'
+    sleep 5
     sync
-    echo "Rebooting again"
-    sleep 1
     /sbin/reboot -f
   fi
 }
@@ -39,9 +39,9 @@ migrate_siteconf() {
   unmount_recovery_partition
   umount /oldpersist
   mv /run/live/medium/siteconf /run/live/medium/oldsiteconf
+  wall 'Rebooting in migrate_siteconf'
+  sleep 5
   sync
-  echo "Rebooting again"
-  sleep 1
   /sbin/reboot -f
 }
 

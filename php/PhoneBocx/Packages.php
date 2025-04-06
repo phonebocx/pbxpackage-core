@@ -108,7 +108,7 @@ class Packages
     public static function updateFromApi($dest = false)
     {
         if (!$dest) {
-            $dest = self::$basedir . "/current.json";
+            $dest = PhoneBocx::getBaseDir() . "/current.json";
         }
         $build = PhoneBocx::create()->getKey('os_build', 'unknown');
         if (!file_exists("/tmp/packages.lock")) {
@@ -128,6 +128,7 @@ class Packages
             sleep(1);
         }
         if (!$locked) {
+            fclose($lockfh);
             throw new \Exception("Couldn't lock after 5 attempts, giving up");
         }
         try {
