@@ -16,7 +16,7 @@ install_grub_bios() {
   destdevice=/dev/$1
   GRUBNAME=$(get_grub_name | tr -d ' ')
   cmd="grub-install --no-floppy --recheck --target=i386-pc --force-extra-removable --root-directory=${WR_CONF} --bootloader-id='${GRUBNAME}' $destdevice"
-  echo -n "Installing BIOS Grub to $destdevice:  "
+  echo -n "   Installing BIOS Grub to $destdevice:  "
   progress_indicator start
   OUT=$($cmd 2>&1)
   status=$?
@@ -57,7 +57,7 @@ install_grub_efi() {
   mount_efi_partition
   GRUBNAME=$(get_grub_name)
   cmd="grub-install --no-floppy --recheck --target=x86_64-efi --force-extra-removable --root-directory=${WR_CONF} --efi-directory=${EFI_CONF} --bootloader-id=${GRUBNAME} --no-uefi-secure-boot"
-  echo -n "Installing Grub to $EFI_PARTITION:  "
+  echo -n "   Installing Grub to $EFI_PARTITION:  "
   progress_indicator start
   OUT=$($cmd 2>&1)
   status=$?

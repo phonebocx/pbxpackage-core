@@ -1,6 +1,7 @@
 #!/bin/bash
 
 create_partitions() {
+
   drive=$1
   # Minimum of 16gb.
   min=16000
@@ -26,20 +27,38 @@ create_partitions() {
   CONF_PARTITION="${DEV}${P}4"
   SPOOL_PARTITION="${DEV}${P}5"
 
-  # part1 = BIOS BOOT (backwards compatibility)
-  # part2 = EFI (256M)
-  # part3 = RECOVERY (2GB)
-  # part4 = CONF (10GB)
-  # part5 = SPOOL (Whatever is left over)
+  # part1 = BIOS BOOT (backwards compatibility, always the same)
+  # part2 = EFI, always 256g, even on a BIOS machine
 
-  # Legacy Boot, 2014 sector size is hard-coded in create_if_needed
+  # If this is a 'small' machine, less than 40g of storage, use
+  # 2G for recovery/persistent storage and 10g for config (eg, boot
+  # images and system-wide persistant storage). Otherwise, 4G and 20G.
+  if [ "$size" -lt 40000 ]; then
+    recoverysize="+2G"
+    confsize="+10G"
+  else
+    recoverysize="+4G"
+    confsize="+20G"
+  fi
+  # part5 = SPOOL, using whatever is left over.
+
+  # If this isn't an EFI machine, don't call it an EFI volume
+  if [ ! -e /sys/firmware/efi ]; then
+    EVOLNAME="Spare Volume"
+  else
+    EVOLNAME="EFI Volume"
+  fi
+
+  # Legacy Boot, 2014 sector size is hard-coded in create_if_needed,
+  # and is required for EFI booting, and stores the BIOS GRUB loader
+  # on BIOS machines.
   create_if_needed "Legacy Boot" $DEV 1 legacy
-  create_if_needed "EFI Volume" $DEV 2 efi "+256M"
+  create_if_needed "$EVOLNAME" $DEV 2 efi "+256M"
   # Unfortunately, the previous installer only created this
   # as a 1G partition. This makes migration painful.
-  create_if_needed "Recovery" $DEV 3 recovery "+2G"
+  create_if_needed "Recovery" $DEV 3 recovery $recoverysize
   # This contains /boot
-  create_if_needed "Config" $DEV 4 conf "+10G"
+  create_if_needed "Config" $DEV 4 conf $confsize
   create_if_needed "Spool" $DEV 5 $SPOOLLABEL "0"
 
   partprobe $DEV
