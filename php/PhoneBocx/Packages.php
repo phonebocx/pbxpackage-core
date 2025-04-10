@@ -135,8 +135,14 @@ class Packages
             $url = self::getFullPkgUrl();
             PhoneBocx::safeGet($dest, $url, true);
         } catch (\Exception $e) {
-            fclose($lockfh);
-            throw $e;
+            if (!self::$quiet) {
+                fclose($lockfh);
+                throw $e;
+            }
+            if (!file_exists($dest)) {
+                file_put_contents($dest, '[]');
+                chmod($dest, 0777);
+            }
         }
         fclose($lockfh);
         return true;
@@ -292,7 +298,6 @@ class Packages
             if (!self::$quiet) {
                 throw $e;
             }
-            return "";
         }
         foreach (self::getLocalPackages() as $p => $pdir) {
             if (empty($pkginfo[$p])) {

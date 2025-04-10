@@ -127,7 +127,8 @@ class Commands
         } else {
             $refresh = false;
         }
-        Packages::$quiet = false;
+        // Uncomment this to display curl errors
+        // Packages::$quiet = false;
         return Packages::getPkgDisplay();
     }
 
