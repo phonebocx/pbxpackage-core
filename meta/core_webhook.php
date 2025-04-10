@@ -6,8 +6,12 @@ $bootstrap = "bootstrap-5.0.0-dist";
 
 function core_mainhook(&$html)
 {
-  $html['head'][] = core_header();
-  $html['styles'][] = core_styles();
+  if (!empty($html['core_head_override'])) {
+    $html['head'][] = $html['core_head_override'];
+  } else {
+    $html['head'][] = core_header($html);
+  }
+  $html['styles'][] = core_styles($html);
   $html['scripts'][] = core_scripts();
   $html['head'][] = core_genFavicon($html);
   $html['scripts'][] = '/core/js/core.js';
@@ -18,21 +22,26 @@ function core_footerhook(&$html, $packages)
   $html['body'][] = "<div class='container-fluid'>";
   core_gentopnav($html);
   $html['body'][] = core_gensidebar($packages);
-  $html['body'][] = core_gentabcontent($packages);
+  $html['body'][] = core_gentabcontent($html, $packages);
   $html['body'][] = "  </div>";
   $html['body'][] = core_genmodal();
   $html['body'][] = "</div>";
 }
 
-function core_header()
+function core_header($html)
 {
-  $header = '
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Yeeting faxes">
-  <meta name="generator" content="Fax Yeeter">
-  <title>SendFax Device</title>';
-  return $header;
+  $title = $html['title'] ?? 'Default PhoneBo.cx Device';
+  $meta = ["description" => "PhoneBo.cx Core", "generator" => "PhoneBo.cx core_header"];
+  $hmeta = $html['meta'] ?? [];
+  foreach ($hmeta as $k => $v) {
+    $meta[$k] = $v;
+  }
+  $headers = ['<meta charset="utf-8">', '<meta name="viewport" content="width=device-width, initial-scale=1">'];
+  foreach ($meta as $k => $v) {
+    $headers[] = '<meta name="' . $k . '" content="' . $v . '">';
+  }
+  $headers[] = '<title>' . $title . '</title>';
+  return join("\n", $headers);
 }
 
 function core_genmodal()
@@ -63,14 +72,14 @@ function core_genFavicon($html)
 
 function core_gentopnav(&$html)
 {
-  $logo = "/core/sfto-logo.png";
-  $html['body'][] = "  <div class='row' id='topnav'>";
-  $html['body'][] = '    <div class="col-2">
-      <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
-        <span class="fs-2"><img src="' . $logo . '" alt="Bender is great" style="width: 90%"></span>
-      </a>
-    </div>
-    <div class="col-10">
+  if (!empty($html['topnav_override'])) {
+    $html['body'][] = $html['topnav_override'];
+    return $html;
+  }
+  if (!empty($html['topline_override'])) {
+    $topline = $html['topline_override'];
+  } else {
+    $topline = '<div class="col-10">
       <span class="fs-4">
         <p>
           Release <span class="currentver">&nbsp;</span>
@@ -81,17 +90,28 @@ function core_gentopnav(&$html)
           <a id="logoutbutton" type="button" class="btn btn-secondary btn-sm d-none" href="/?action=logout">Logout</a>
         </p>
       </span>
+    </div>';
+  }
+  $logo = $html['logo'] ?? "/core/defaultlogo.png";
+  $html['body'][] = "  <div class='row' id='topnav'>";
+  $html['body'][] = '    <div class="col-2">
+      <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
+        <span class="fs-2"><img src="' . $logo . '" alt="Bender is great" style="width: 90%"></span>
+      </a>
     </div>
+    ' . $topline . '
   </div>';
 }
 
-function core_styles()
+function core_styles($html)
 {
   global $bootstrap;
   $icons = "bootstrap-icons-1.11.3";
   $styles = "<link href='/core/$bootstrap/css/bootstrap.min.css' rel='stylesheet'>\n";
   $styles .= "<link href='/core/$icons/bootstrap-icons.css' rel='stylesheet'>";
-  $styles .= "<link href='/core/css/core.css' rel='stylesheet'>";
+  if (empty($html['skip_core_css'])) {
+    $styles .= "<link href='/core/css/core.css' rel='stylesheet'>";
+  }
   return $styles;
 }
 
@@ -148,11 +168,11 @@ function core_gensidebar($packages)
   return $head;
 }
 
-function core_gentabcontent($packages)
+function core_gentabcontent($html, $packages)
 {
   $div = "    <div class='col-8'>\n";
   $div .= "      <div class='tab-content' id='sidebar-content'>\n";
-  $div .= "        <div class='tab-pane fade show active' id='pillcontent-core' role='tabpanel' aria-labelledby='home-pill'>" . core_gen_core_body() . "</div>\n";
+  $div .= "        <div class='tab-pane fade show active' id='pillcontent-core' role='tabpanel' aria-labelledby='home-pill'>" . core_gen_core_body($html) . "</div>\n";
   foreach ($packages as $hook => $f) {
     $html = core_gendiv($hook);
     if ($html) {
@@ -187,8 +207,11 @@ function core_divheader($hookname)
   return $header;
 }
 
-function core_gen_core_body()
+function core_gen_core_body($html)
 {
+  if (!empty($html['core_body_override'])) {
+    return $html['core_body_override'];
+  }
   $str = "<h3 id='h3id'>System information</h3>";
   $str .= core_gen_spool_alert();
   $str .= "<ul class='list-group list-group-flush'>";

@@ -155,12 +155,17 @@ class PhoneBocx
         return $this->h;
     }
 
+    public function triggerHookWithModel(string $hookname, HookModel $model): array
+    {
+        return $this->h->trigger($hookname, $model);
+    }
+
     public function triggerHook(string $hookname, array $params = []): array
     {
         $model = new HookModel($params);
         // Note that the HookModel is returned in __model if you can't pass
-        // your params by ref.
-        return $this->h->trigger($hookname, $model);
+        // your params by ref or create your own HookModel
+        return $this->triggerHookWithModel($hookname, $model);
     }
 
     public function getServiceMgr(): ServiceMgr

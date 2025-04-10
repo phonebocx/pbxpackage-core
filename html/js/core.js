@@ -77,6 +77,9 @@ function corePoll() {
 
 function parsePollResp(data) {
     // console.log(data);
+    if (data.pagetitle) {
+        document.title = data.pagetitle;
+    }
     $(".currentver").text(data.runningdist.fullbuild);
     $(".kver").text(data.kernel.kver);
     $(".kbuild").text(data.kernel.kbuild);
@@ -116,7 +119,6 @@ function parsePollResp(data) {
 }
 
 function genSysInfo(data) {
-    document.title = "SendFax.to " + data.systemid;
     $("#sysinfo>li").remove();
     $("#sysinfo").append("<li class='serialno'>Serial Number: " + data.serialno + " (" + data.systemid + ")</li>");
     $("#sysinfo").append("<li class='sysname'>System Name: " + data.systemname + "</li>");

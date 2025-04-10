@@ -7,8 +7,9 @@ use PhoneBocx\WebUI\DebugTools;
 
 include "/usr/local/bin/phpboot.php";
 
+// Defaults
 $html = [
-  "favicon" => "/core/sendfax.ico",
+  "favicon" => "/core/favicon.ico",
   "head" => [],
   "styles" => [],
   "headers" => [],
@@ -42,6 +43,22 @@ foreach ($packages as $name => $dir) {
 }
 
 $includes = [];
+$finalhooks = [];
+// Loop through twice. This first one is looking for early and final hooks.
+// Early is used to add overrides (eg setting title, name, icon), and final
+// is there to potentially update anything that couldn't be done previously.
+foreach ($hookfiles as $p => $f) {
+  $ename = $p . "_earlyhook";
+  if (function_exists($ename)) {
+    $html = $ename($html);
+  }
+  $fname = $p . "_finalhook";
+  if (function_exists($fname)) {
+    $finalhooks[] = $fname;
+  }
+}
+
+// Now process the hooks again, this time running them if needed
 foreach ($hookfiles as $p => $f) {
   if (strpos($f, "/origcore/") !== false) {
     continue;
@@ -64,25 +81,50 @@ if (!empty($_REQUEST['debug'])) {
   $html = $d->updateHtmlArr($html);
 }
 
-print '<!doctype html><html lang="en"><head profile="http://www.w3.org/2005/10/profile">' . implode("\n", $html['head']) . "\n";
-print "<!-- styles -->\n" . implode("\n", $html['styles']) . "\n</head>\n";
-print "<body>\n";
 if (WebAuth::isLoggedIn()) {
-  print "<script>window.isloggedin=true;</script>\n";
+  $isl = "<script>window.isloggedin=true;</script>";
 } else {
-  print "<script>window.isloggedin=false;</script>\n";
+  $isl = "<script>window.isloggedin=false;</script>";
 }
-// print "<p><pre>" . json_encode($includes) . "</pre></p>\n";
-print "<!-- headers -->\n" . implode("\n", $html['headers']) . "\n<!-- end headers -->\n";
-print "<!-- start body -->\n" . implode("\n", $html['body']) . "\n<!-- end body -->\n";
-print "<!-- start footers -->\n" . implode("\n", $html['footer']) . "\n<!-- end footers -->\n";
-print "<!-- start scripts -->\n";
+$body = [
+  '<!doctype html><html lang="en">',
+  '<head profile="http://www.w3.org/2005/10/profile">',
+  implode("\n", $html['head']),
+  "<!-- styles -->",
+  implode("\n", $html['styles']),
+  "<!-- end styles -->",
+  "</head>",
+  "<body>",
+  $isl,
+  // "<p><pre>" . json_encode($includes) . "</pre></p>",
+  "<!-- headers -->",
+  implode("\n", $html['headers']),
+  "<!-- end headers -->",
+  "<!-- start body -->",
+  implode("\n", $html['body']),
+  "<!-- end body -->",
+  "<!-- start footers -->",
+  implode("\n", $html['footer']),
+  "<!-- end footers -->",
+  "<!-- start scripts -->",
+];
 foreach ($html['scripts'] as $js) {
-  print "  <script src='$js'></script>\n";
+  $body[] = "<script src='$js'></script>";
 }
+$body[] = "<!-- end scripts -->";
+$body[] = "<!-- start raw scripts -->";
 foreach ($html['rawscripts'] as $id => $raw) {
-  print "  <script scriptid='$id'>$raw</script>\n";
+  $body[] = "  <script scriptid='$id'>$raw</script>";
 }
-print "<!-- end scripts -->\n";
-print "</body>\n";
-print implode("\n", $html['end']) . "\n";
+$body[] = "<!-- end raw scripts -->";
+$body[] = "</body>";
+$body[] = "<!-- end section -->";
+$body[] = implode("\n", $html['end']);
+
+// If there are any final hooks, run them over what will be returned
+// Finalhooks, obviously, need to be passed by ref.
+foreach ($finalhooks as $fh) {
+  $fh($body, $html);
+}
+
+print implode("\n", $body);

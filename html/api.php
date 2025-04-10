@@ -1,6 +1,8 @@
 <?php
 
 use PhoneBocx\AsRoot\ConsoleScreenshot;
+use PhoneBocx\Models\HookModel;
+use PhoneBocx\PhoneBocx;
 use PhoneBocx\WebUI\MainPage;
 use PhoneBocx\WebUI\Screenshot;
 
@@ -34,7 +36,10 @@ switch ($cmd) {
 function genPoll()
 {
     $p = new MainPage();
-    return $p->respond();
+    $r = $p->respond(false);
+    $m = new HookModel($r);
+    PhoneBocx::create()->triggerHookWithModel("webapipoll", $m);
+    print json_encode($m->jsonSerialize());
 }
 
 function getScreenshot()
