@@ -99,7 +99,7 @@ class Commands
             ],
             "checkdownload" => [
                 "help" => "Check the downloaded package is valid",
-                "callable" => self::class . "::checkPkgHashes",
+                "callable" => self::class . "::checkPkgDownload",
                 "print" => true,
             ],
             "queuestats" => [
@@ -285,11 +285,24 @@ class Commands
         throw new \Exception("Unknown outputstyle $outputstyle");
     }
 
-    public static function checkPkgHashes(string $pkgbase)
+    public static function checkPkgDownload(string $pkgbase)
     {
         if (!file_exists($pkgbase)) {
             return "Error: $pkgbase missing";
         }
+
+        $stat = stat($pkgbase);
+        if ($stat['size'] < 16384) {
+            return "Error: $pkgbase too small at " . $stat['size'];
+        }
+
+        $fh = fopen($pkgbase, "r");
+        $magic = fread($fh, 4);
+        fclose($fh);
+        if ($magic !== "hsqs") {
+            return "Error: $pkgbase is not a squashfs filesystem, magic is not 'hsqs'";
+        }
+
         $hashfile = $pkgbase . ".sha256";
         if (!file_exists($hashfile)) {
             return "Error: $hashfile missing";
