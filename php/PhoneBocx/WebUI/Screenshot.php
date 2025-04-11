@@ -33,10 +33,10 @@ class Screenshot extends Base
         exit;
     }
 
-    public function respond()
+    public function respond(bool $string = false)
     {
         if (!isset($_REQUEST['png'])) {
-            return parent::respond();
+            return parent::respond($string);
         }
         return $this->getPngFile();
     }
