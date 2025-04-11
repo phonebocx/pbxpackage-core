@@ -14,8 +14,18 @@ class Packages
     {
         $build = PhoneBocx::create()->getKey('os_build', 'unknown');
         $dv = DistroVars::getDistroVars();
-        $baseurl = $dv['pkgurl'] ?? "http://packages.phonebo.cx/packages.php";
-        return $baseurl . "?os_build=$build";
+        $params = [
+            "baseurl" => $dv['pkgurl'] ?? "http://packages.phonebo.cx/packages.php",
+            "os_build" => $build,
+            "buildver" => $dv['buildver'] ?? "nobuildver",
+            "shortname" => $dv['shortname'] ?? "noshortname",
+        ];
+        // INFO: There could be a hook added here, to update/add things by a package?
+        $url = $params['baseurl'] . "?";
+        unset($params['baseurl']);
+        // Lower case, maximum of 15 chars
+        $params['shortname'] = substr(strtolower($params['shortname']), 0, 15);
+        return $url . http_build_query($params);
     }
 
     public static function getRemotePackages()
