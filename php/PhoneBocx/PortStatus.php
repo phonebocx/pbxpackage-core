@@ -6,12 +6,13 @@ class PortStatus
 {
   public static function parseDahdiScanFromFile($file)
   {
+    $devel = file_exists("/var/run/distro/devel");
     $dahdiscan = [];
     while ($line = fgets($file)) {
       if (preg_match('/port=(\d+),(.+)$/', $line, $out)) {
         $port = $out[1];
         $type = $out[2];
-        $dahdiscan[$port] = ["type" => $type];
+        $dahdiscan[$port] = ["type" => $type, "devel" => $devel];
       }
     }
     return self::parseDahdiScan($dahdiscan);

@@ -4,9 +4,47 @@ namespace PhoneBocx;
 
 class Dahdi
 {
+    /**
+     * Location to keep the cached result of dahdi_scan
+     *
+     * @return string
+     */
+    public static function getDahdiScanJson(): string
+    {
+        return PhoneBocx::getBaseDir() . "/dahdi_scan.json";
+    }
+
+    /**
+     * Used by Commands - 'util --getdahdiscan' and API.php
+     *
+     * @param string|null $param
+     * @param bool $print Actually print (disabled in API.php)
+     * @return string
+     */
+    public static function getDahdiScanCmd(?string $param = "", bool $print = true): string
+    {
+        if ($param) {
+            $refresh = true;
+        } else {
+            $refresh = false;
+        }
+        $scan = self::getDahdiScan($refresh);
+        $res = $scan['str'] ?? "";
+        if ($print) {
+            print $res;
+        }
+        return $res;
+    }
+
+    /**
+     * Run and cache (if possible) the result of dahdi_scan
+     *
+     * @param boolean $refresh
+     * @return array
+     */
     public static function getDahdiScan(bool $refresh = false): array
     {
-        $scanfile = PhoneBocx::getBaseDir() . "/dahdi_scan.json";
+        $scanfile = self::getDahdiScanJson();
         if ($refresh) {
             @unlink($scanfile);
         }
@@ -16,7 +54,7 @@ class Dahdi
             }
             exec("/usr/sbin/dahdi_scan", $out, $ret);
             if ($ret != 0) {
-                throw new \Exception("Could lot run dahdiscan, ret was $ret from " . json_encode($out));
+                throw new \Exception("Could not run dahdiscan, ret was $ret from " . json_encode($out));
             }
             $str = join("\n", $out);
             $j = ["out" => $out, "str" => $str, "scanfile" => $scanfile];

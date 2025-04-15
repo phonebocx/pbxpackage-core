@@ -48,7 +48,7 @@ while :; do
     [40delimg]="del_grub_entry"
   )
 
-  if [ -e /tmp/devel ]; then
+  if [ -e /var/run/distro/devel ]; then
     assocoptions[01deb]="Bash menu logs"
     assocoptions[11devel]="Disable Debug mode"
     assocoptions[12grub]="Reinstall bootloader"
@@ -92,7 +92,7 @@ while :; do
       sleep 20
       ;;
     "11devel")
-      [ -e /tmp/devel ] && rm -f /tmp/devel || touch /tmp/devel
+      [ -e /var/run/distro/devel ] && rm -f /var/run/distro/devel || touch /var/run/distro/devel
       ;;
     "16destruct")
       [ -e /tmp/destruct ] && rm -f /tmp/destruct || touch /tmp/destruct

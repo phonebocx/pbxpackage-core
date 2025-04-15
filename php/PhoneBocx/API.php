@@ -102,7 +102,8 @@ class API
             }
             $this->params['json'][$n] = trim(file_get_contents($f));
         }
-        $d = Dahdi::getDahdiStr();
+        // Force refresh
+        $d = Dahdi::getDahdiScanCmd("true", false);
         if ($d) {
             $this->params['json']['dahdiscan'] = base64_encode($d);
         }

@@ -8,7 +8,9 @@ class Packages
     public static $update = false;
     public static $short = true;
 
-    public static $quiet = true;
+    // You'll need to set this abck to public if you want to change it.
+    // It's set to private to catch any debugging left over
+    private static $quiet = true;
 
     public static function getFullPkgUrl(): string
     {

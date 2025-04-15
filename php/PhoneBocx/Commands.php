@@ -36,6 +36,12 @@ class Commands
                 "callable" => self::class . "::getPkgURL",
                 "print" => true
             ],
+            "getdahdiscan" => [
+                "help" => "Generate/update get_dahdi_scan",
+                "callable" => Dahdi::class . "::getDahdiScanCmd",
+                "example" => "--getdahdiscan=force will forcefully refresh the cached result",
+                "print" => true
+            ],
             "parsedahdiscan" => [
                 "help" => "Parse the output of get_dahdi_scan",
                 "callable" => PortStatus::class . "::parseDahdiScanStdin",
@@ -99,7 +105,7 @@ class Commands
             ],
             "checkdownload" => [
                 "help" => "Check the downloaded package is valid",
-                "callable" => self::class . "::checkPkgDownload",
+                "callable" => self::class . "::checkPkgHashes",
                 "print" => true,
             ],
             "queuestats" => [
@@ -127,7 +133,6 @@ class Commands
         } else {
             $refresh = false;
         }
-        // Uncomment this to display curl errors
         // Packages::$quiet = false;
         return Packages::getPkgDisplay();
     }
@@ -285,24 +290,11 @@ class Commands
         throw new \Exception("Unknown outputstyle $outputstyle");
     }
 
-    public static function checkPkgDownload(string $pkgbase)
+    public static function checkPkgHashes(string $pkgbase)
     {
         if (!file_exists($pkgbase)) {
             return "Error: $pkgbase missing";
         }
-
-        $stat = stat($pkgbase);
-        if ($stat['size'] < 16384) {
-            return "Error: $pkgbase too small at " . $stat['size'];
-        }
-
-        $fh = fopen($pkgbase, "r");
-        $magic = fread($fh, 4);
-        fclose($fh);
-        if ($magic !== "hsqs") {
-            return "Error: $pkgbase is not a squashfs filesystem, magic is not 'hsqs'";
-        }
-
         $hashfile = $pkgbase . ".sha256";
         if (!file_exists($hashfile)) {
             return "Error: $hashfile missing";
